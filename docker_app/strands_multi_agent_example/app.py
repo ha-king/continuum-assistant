@@ -159,7 +159,7 @@ def run_memory_agent(query):
     response = agent(query)
     return str(response)
 
-st.title("Continuum Assistant")
+st.title("📁 Teacher's Assistant Chatbot")
 
 # Tab management
 if "tab_ids" not in st.session_state:

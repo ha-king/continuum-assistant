@@ -129,14 +129,22 @@ class CdkStack(Stack):
         )
 
         # Grant access to Bedrock
-        bedrock_policy = iam.Policy(self, f"{prefix}BedrockPolicy",
-                                    statements=[
-                                        iam.PolicyStatement(
-                                            actions=["bedrock:InvokeModel"],
-                                            resources=["*"]
-                                        )
-                                    ]
-                                    )
+        bedrock_policy = iam.Policy(
+            self,
+            f"{prefix}BedrockPolicy",
+            statements=[
+                iam.PolicyStatement(
+                    actions=[
+                        "bedrock:InvokeModel",
+                        "bedrock:InvokeModelWithResponseStream",
+                        "bedrock:RetrieveAndGenerate",
+                        "bedrock:Retrieve",
+                        "ssm:GetParameter"
+                    ],
+                    resources=["*"]
+                )
+            ]
+        )
         task_role = fargate_task_definition.task_role
         task_role.attach_inline_policy(bedrock_policy)
 

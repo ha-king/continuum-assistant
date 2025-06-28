@@ -14,8 +14,8 @@ class Config:
     SECRETS_MANAGER_ID = f"{STACK_NAME}ParamCognitoSecret12345"
 
     # AWS region in which you want to deploy the cdk stack
-    DEPLOYMENT_REGION = "us-east-1"
+    DEPLOYMENT_REGION = "us-west-2"
 
     # If Bedrock is not activated in us-east-1 in your account, set this value
     # accordingly
-    BEDROCK_REGION = "us-east-1"
+    BEDROCK_REGION = "us-west-2"
