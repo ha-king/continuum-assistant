@@ -14,6 +14,25 @@ from research_assistant import research_assistant
 from louisiana_legal_assistant import louisiana_legal_assistant
 from web_browser_assistant import web_browser_assistant
 from no_expertise import general_assistant
+from utils.auth import Auth
+from config_file import Config
+
+# Authentication setup
+try:
+    authenticator = Auth.get_authenticator(
+        secret_id=Config.SECRETS_MANAGER_ID,
+        region=Config.DEPLOYMENT_REGION
+    )
+    
+    # Check authentication
+    is_logged_in = authenticator.login()
+    
+    if not is_logged_in:
+        st.stop()
+        
+except Exception as e:
+    st.error(f"Authentication error: {str(e)}")
+    st.stop()
 
 TEACHER_SYSTEM_PROMPT = """
 You are TeachAssist, a sophisticated educational orchestrator with ACTIVE WEB BROWSING CAPABILITIES. Your role is to:
@@ -78,60 +97,11 @@ IF ANY OF THE ABOVE = YES, YOU MUST USE THE WEB BROWSER ASSISTANT TOOL.
 Always confirm your understanding before routing to ensure accurate assistance.
 """
 
-ACTION_SYSTEM_PROMPT = """
-You are a query router that determines whether a user query should go to:
-1. TEACHER - for educational questions, web browsing, company research, website analysis, and general assistance
-2. KNOWLEDGE - for storing/retrieving personal information or facts
-
-Reply with EXACTLY ONE WORD - either "teacher" or "knowledge".
-
-CRITICAL: Web browsing, company research, and website queries go to TEACHER.
-
-Examples:
-- "What is 2+2?" -> "teacher"
-- "Browse infascination.com" -> "teacher"
-- "Tell me about a company" -> "teacher"
-- "Visit a website" -> "teacher"
-- "Remember my birthday is July 4" -> "knowledge"
-- "Help me with grammar" -> "teacher"
-- "What's my birthday?" -> "knowledge"
-- "Explain photosynthesis" -> "teacher"
-- "Store this fact: Paris is the capital of France" -> "knowledge"
-"""
-
-KB_SYSTEM_PROMPT = """
-You are a helpful knowledge assistant that provides clear, concise answers 
-based on information retrieved from a knowledge base.
-
-Your responses should be direct and conversational.
-"""
-
-MEMORY_SYSTEM_PROMPT = """You are a personal assistant that maintains context by remembering user details.
-
-Capabilities:
-- Store new information using mem0_memory tool (action="store")
-- Retrieve relevant memories (action="retrieve")
-- List all memories (action="list")
-- Provide personalized responses
-
-Key Rules:
-- Always include user_id=mem0_user in tool calls
-- Be conversational and natural in responses
-- Acknowledge stored information
-- Only share relevant information
-"""
-
-
 def determine_action(agent, query):
-    # Simple keyword-based routing to avoid infinite loops
     query_lower = query.lower()
-    
-    # Knowledge keywords
     knowledge_keywords = ['remember', 'store', 'my birthday', 'personal', 'save this']
     if any(keyword in query_lower for keyword in knowledge_keywords):
         return "knowledge"
-    
-    # Everything else goes to teacher (including charter queries, research, web browsing)
     return "teacher"
 
 def run_kb_agent(query):
@@ -148,20 +118,19 @@ def run_kb_agent(query):
             result = agent.tool.memory(action="retrieve", query=query, min_score=0.4, max_results=9)
             answer = agent.tool.use_llm(
                 prompt=f"User question: \"{query}\"\n\nInformation: {str(result)}\n\nProvide a helpful answer:",
-                system_prompt=KB_SYSTEM_PROMPT
+                system_prompt="You are a helpful knowledge assistant that provides clear, concise answers based on information retrieved from a knowledge base."
             )
             return str(answer)
     except Exception:
         return "Knowledge base is not configured. Please use the teacher mode for educational questions."
 
 def run_memory_agent(query):
-    agent = Agent(system_prompt=MEMORY_SYSTEM_PROMPT, tools=[mem0_memory, use_llm])
+    agent = Agent(system_prompt="You are a personal assistant that maintains context by remembering user details.", tools=[mem0_memory, use_llm])
     response = agent(query)
     return str(response)
 
-st.title("Continuum Assistant")
+st.title("🔒 Continuum Assistant")
 
-# Tab management
 if "tab_ids" not in st.session_state:
     st.session_state.tab_ids = [0]
 if "next_tab_id" not in st.session_state:
@@ -182,9 +151,13 @@ with col3:
         st.rerun()
 
 with st.sidebar:
+    # Add logout button
+    if st.button("🚪 Logout"):
+        authenticator.logout()
+        st.rerun()
+    
     st.header("Configuration")
     
-    # Model selection
     model_options = [
         "us.amazon.nova-pro-v1:0",
         "us.amazon.nova-lite-v1:0", 
@@ -195,7 +168,6 @@ with st.sidebar:
     ]
     selected_model = st.selectbox("Bedrock Model:", model_options)
     
-    # Memory backend selection
     opensearch_available = bool(os.environ.get("OPENSEARCH_HOST"))
     memory_options = ["Bedrock Knowledge Base"]
     if opensearch_available:
@@ -203,7 +175,6 @@ with st.sidebar:
     
     memory_backend = st.selectbox("Memory Backend:", memory_options)
     
-    # Teacher agent toggles
     st.subheader("Teacher Agents")
     use_math = st.checkbox("Math Assistant", value=True)
     use_english = st.checkbox("English Assistant", value=True)
@@ -219,46 +190,11 @@ with st.sidebar:
     use_general = st.checkbox("General Assistant", value=True)
     
     st.divider()
-    st.subheader("Knowledge Storage")
-    with st.expander("Store Information"):
-        info_to_store = st.text_area("Information to store:", height=100)
-        if st.button("Store in Knowledge Base"):
-            if info_to_store.strip():
-                try:
-                    from strands_tools import memory
-                    memory(action="store", content=f"Manual entry: {info_to_store}")
-                    st.success("Information stored successfully!")
-                except Exception as e:
-                    st.error(f"Storage failed: {str(e)}")
-            else:
-                st.warning("Please enter information to store")
-    
-    st.divider()
-    st.subheader("PDF Viewer")
-    uploaded_file = st.file_uploader("Upload PDF", type="pdf")
-    if uploaded_file:
-        st.download_button(
-            label="Download PDF",
-            data=uploaded_file.getvalue(),
-            file_name=uploaded_file.name,
-            mime="application/pdf"
-        )
-        with st.expander("View PDF"):
-            st.write(f"**{uploaded_file.name}**")
-            # Display PDF using iframe
-            pdf_data = uploaded_file.getvalue()
-            import base64
-            b64 = base64.b64encode(pdf_data).decode()
-            pdf_display = f'<iframe src="data:application/pdf;base64,{b64}" width="700" height="500" type="application/pdf"></iframe>'
-            st.markdown(pdf_display, unsafe_allow_html=True)
-    
-    st.divider()
     if st.button("🛑 Stop Session", type="primary"):
         st.stop()
 
-st.write("Ask a question in any subject area, and I'll route it to the appropriate specialist.")
+st.write("🔐 **Authenticated Access** - Ask a question in any subject area, and I'll route it to the appropriate specialist.")
 
-# Build teacher tools list based on selections
 teacher_tools = []
 if use_math:
     teacher_tools.append(math_assistant)
@@ -291,28 +227,23 @@ teacher_agent = Agent(
     tools=teacher_tools
 )
 
-# Initialize messages for each tab
 if "tab_messages" not in st.session_state:
     st.session_state.tab_messages = {}
 
 for i, tab in enumerate(tabs):
     with tab:
         tab_id = st.session_state.tab_ids[i]
-        # Initialize messages for this tab if not exists
         if tab_id not in st.session_state.tab_messages:
             st.session_state.tab_messages[tab_id] = []
         
-        # Clear chat button for this tab
         if st.button("🗑️ Clear Chat", key=f"clear_{tab_id}"):
             st.session_state.tab_messages[tab_id] = []
             st.rerun()
         
-        # Display messages for this tab
         for message in st.session_state.tab_messages[tab_id]:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
         
-        # Chat input for this tab
         if prompt := st.chat_input(f"Ask your question here... (Tab {tab_id+1})", key=f"chat_input_{tab_id}"):
             st.session_state.tab_messages[tab_id].append({"role": "user", "content": prompt})
             with st.chat_message("user"):
@@ -323,18 +254,10 @@ for i, tab in enumerate(tabs):
                     router_agent = Agent(tools=[use_llm])
                     action = determine_action(router_agent, prompt)
                     
-                    # Build context from conversation history
                     context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.tab_messages[tab_id][-10:]])
                     full_prompt = f"Context: {context}\n\nCurrent question: {prompt}" if context else prompt
                     
-                    # Auto-store important findings
-                    if any(word in prompt.lower() for word in ['research', 'find', 'search', 'lookup']):
-                        store_query_context = True
-                    else:
-                        store_query_context = False
-                    
                     if action == "teacher":
-                        # Direct web browser routing bypass
                         if any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit']):
                             try:
                                 content = web_browser_assistant(prompt)
@@ -358,13 +281,6 @@ for i, tab in enumerate(tabs):
                     st.markdown(content)
                     st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": content})
                     
-                    # Auto-store research findings
-                    if store_query_context and len(content) > 100:
-                        try:
-                            from strands_tools import memory
-                            memory(action="store", content=f"Q: {prompt}\nA: {content[:500]}...")
-                        except:
-                            pass
                 except Exception as e:
                     error_msg = f"An error occurred: {str(e)}"
                     st.markdown(error_msg)
