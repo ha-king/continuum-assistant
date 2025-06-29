@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 python:3.12
+FROM --platform=linux/amd64 public.ecr.aws/docker/library/python:3.12-slim
 EXPOSE 8501
 WORKDIR /app
 COPY requirements.txt ./requirements.txt
@@ -7,3 +7,4 @@ COPY . .
 
 # Command overriden by docker-compose
 CMD streamlit run app.py
+# Force rebuild
