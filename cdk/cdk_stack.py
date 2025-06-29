@@ -9,6 +9,9 @@ from aws_cdk import (
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as origins,
     aws_elasticloadbalancingv2 as elbv2,
+    aws_codepipeline as codepipeline,
+    aws_codepipeline_actions as codepipeline_actions,
+    aws_codebuild as codebuild,
     SecretValue,
     CfnOutput,
 )
@@ -207,3 +210,75 @@ class CdkStack(Stack):
         # Output Cognito pool id
         CfnOutput(self, "CognitoPoolId",
                   value=user_pool.user_pool_id)
+
+        # CI/CD Pipeline
+        source_output = codepipeline.Artifact()
+        build_output = codepipeline.Artifact()
+
+        # CodeBuild project
+        build_project = codebuild.Project(
+            self, f"{prefix}Build",
+            build_spec=codebuild.BuildSpec.from_object({
+                "version": "0.2",
+                "phases": {
+                    "install": {
+                        "runtime-versions": {
+                            "python": "3.12",
+                            "nodejs": "20"
+                        },
+                        "commands": [
+                            "npm install -g aws-cdk",
+                            "pip install aws-cdk-lib constructs"
+                        ]
+                    },
+                    "build": {
+                        "commands": [
+                            "cdk deploy --require-approval never"
+                        ]
+                    }
+                }
+            }),
+            environment=codebuild.BuildEnvironment(
+                build_image=codebuild.LinuxBuildImage.STANDARD_7_0,
+                privileged=True
+            )
+        )
+
+        # Add permissions for CDK deployment
+        build_project.add_to_role_policy(iam.PolicyStatement(
+            actions=["*"],
+            resources=["*"]
+        ))
+
+        # Pipeline
+        pipeline = codepipeline.Pipeline(
+            self, f"{prefix}Pipeline",
+            stages=[
+                codepipeline.StageProps(
+                    stage_name="Source",
+                    actions=[
+                        codepipeline_actions.GitHubSourceAction(
+                            action_name="GitHub_Source",
+                            owner="ha-king",
+                            repo="continuum-assistant",
+                            branch="main",
+                            oauth_token=SecretValue.secrets_manager("github-token"),
+                            output=source_output
+                        )
+                    ]
+                ),
+                codepipeline.StageProps(
+                    stage_name="Build",
+                    actions=[
+                        codepipeline_actions.CodeBuildAction(
+                            action_name="Build",
+                            project=build_project,
+                            input=source_output,
+                            outputs=[build_output]
+                        )
+                    ]
+                )
+            ]
+        )
+
+        CfnOutput(self, "PipelineArn", value=pipeline.pipeline_arn)

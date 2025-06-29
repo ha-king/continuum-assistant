@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from web_browser_assistant import web_browser_assistant
 
 LAFAYETTE_ECONOMIC_SYSTEM_PROMPT = """
 You are LafayetteEconomicAssist, a specialized economic development expert for Lafayette, Louisiana. Your role is to:
@@ -49,6 +50,22 @@ def lafayette_economic_assistant(query: str) -> str:
         formatted_query = f"Provide specific guidance on Lafayette, Louisiana economic opportunities for: {query}"
         
         # Create Lafayette economic agent
+        # Add web browsing for current data if needed
+
+        if any(word in query.lower() for word in ['current', 'latest', 'today', 'recent', 'now']):
+
+            try:
+
+                web_data = web_browser_assistant(f"Current research data: {query}")
+
+                formatted_query += f"\n\nCurrent data from web: {web_data}"
+
+            except:
+
+                pass
+
+        
+
         lafayette_agent = Agent(
             system_prompt=LAFAYETTE_ECONOMIC_SYSTEM_PROMPT,
             tools=[],

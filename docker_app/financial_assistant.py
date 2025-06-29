@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from web_browser_assistant import web_browser_assistant
 
 FINANCIAL_SYSTEM_PROMPT = """
 You are FinancialAssist, a specialized financial records and reports expert. Your role is to:
@@ -42,6 +43,22 @@ def financial_assistant(query: str) -> str:
         formatted_query = f"Provide expert financial analysis and guidance for: {query}"
         
         # Create financial agent
+        # Add web browsing for current data if needed
+
+        if any(word in query.lower() for word in ['current', 'latest', 'today', 'recent', 'now']):
+
+            try:
+
+                web_data = web_browser_assistant(f"Current research data: {query}")
+
+                formatted_query += f"\n\nCurrent data from web: {web_data}"
+
+            except:
+
+                pass
+
+        
+
         financial_agent = Agent(
             system_prompt=FINANCIAL_SYSTEM_PROMPT,
             tools=[],

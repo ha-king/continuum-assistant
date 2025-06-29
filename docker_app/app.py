@@ -14,6 +14,24 @@ from research_assistant import research_assistant
 from louisiana_legal_assistant import louisiana_legal_assistant
 from web_browser_assistant import web_browser_assistant
 from no_expertise import general_assistant
+from psychology_assistant import psychology_assistant
+from cryptography_assistant import cryptography_assistant
+from blockchain_assistant import blockchain_assistant
+from cryptocurrency_assistant import cryptocurrency_assistant
+from tokenomics_assistant import tokenomics_assistant
+from economics_assistant import economics_assistant
+from cybersecurity_offense_assistant import cybersecurity_offense_assistant
+from cybersecurity_defense_assistant import cybersecurity_defense_assistant
+from web3_assistant import web3_assistant
+from entrepreneurship_assistant import entrepreneurship_assistant
+from formula1_assistant import formula1_assistant
+from ai_assistant import ai_assistant
+from microchip_supply_chain_assistant import microchip_supply_chain_assistant
+from opensource_supply_chain_assistant import opensource_supply_chain_assistant
+from nuclear_energy_assistant import nuclear_energy_assistant
+from louisiana_vc_assistant import louisiana_vc_assistant
+from data_acquisition_assistant import data_acquisition_assistant
+from data_analysis_assistant import data_analysis_assistant
 from utils.auth import Auth
 from config_file import Config
 
@@ -48,7 +66,7 @@ You are TeachAssist, a sophisticated educational orchestrator with ACTIVE WEB BR
    - AWS Assistant: For cloud architecture, AWS services, and best practices
    - Business Dev Assistant: For business development, partnerships, and growth strategies
    - Lafayette Economic Assistant: For economic opportunities in Lafayette, Louisiana
-   - Research Assistant: For internet research and web-based information gathering
+   - Research Assistant: *** ACTIVE AND FUNCTIONAL *** For internet research and web-based information gathering with real-time data access
    - Louisiana Legal Assistant: For Louisiana business legal matters and compliance
    - Web Browser Assistant: *** ACTIVE AND FUNCTIONAL *** For real-time website browsing, content analysis, company research, and any website-related queries
    - General Assistant: For all other topics outside these specialized domains
@@ -70,7 +88,7 @@ You are TeachAssist, a sophisticated educational orchestrator with ACTIVE WEB BR
    - If query involves AWS/cloud architecture/best practices → AWS Assistant
    - If query involves business development/partnerships/growth → Business Dev Assistant
    - If query involves Lafayette LA economic opportunities → Lafayette Economic Assistant
-   - If query involves research/web search/current information → Research Assistant
+   - If query involves research/web search/current information/real-time data → Research Assistant
    - If query involves Louisiana legal/business law matters → Louisiana Legal Assistant
    - If query involves browsing websites/viewing web content/website analysis/company information → Web Browser Assistant
    - If query mentions specific websites (like .com, .org) or asks to "browse" or "visit" → Web Browser Assistant
@@ -79,7 +97,7 @@ You are TeachAssist, a sophisticated educational orchestrator with ACTIVE WEB BR
    - For complex queries, coordinate multiple agents as needed
 
 *** MANDATORY WEB BROWSING RULES - NO EXCEPTIONS ***:
-- ANY query containing "browse", "website", "visit", ".com", ".org", "infascination", "company" → IMMEDIATELY use web_browser_assistant tool
+- ANY query containing "browse", "website", "visit", ".com", ".org", "infascination", "company", "current", "today", "now", "latest" → IMMEDIATELY use web_browser_assistant or research_assistant tool
 - ANY query asking about specific companies or their information → IMMEDIATELY use web_browser_assistant tool
 - ANY query requesting website analysis or company research → IMMEDIATELY use web_browser_assistant tool
 - If user asks to browse ANY website → CALL web_browser_assistant(query) IMMEDIATELY
@@ -129,7 +147,19 @@ def run_memory_agent(query):
     response = agent(query)
     return str(response)
 
-st.title("🔒 Continuum Assistant")
+st.title("🔒 Son of Anton")
+
+# Get user's timezone from browser JavaScript
+if 'user_timezone' not in st.session_state:
+    st.components.v1.html("""
+    <script>
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    window.parent.postMessage({type: 'timezone', value: timezone}, '*');
+    </script>
+    """, height=0)
+    
+    # Listen for timezone message
+    st.session_state.user_timezone = 'UTC'  # Default fallback
 
 if "tab_ids" not in st.session_state:
     st.session_state.tab_ids = [0]
@@ -189,6 +219,26 @@ with st.sidebar:
     use_web_browser = st.checkbox("Web Browser Assistant", value=True)
     use_general = st.checkbox("General Assistant", value=True)
     
+    st.subheader("Specialized Experts")
+    use_psychology = st.checkbox("Psychology Assistant", value=True)
+    use_cryptography = st.checkbox("Cryptography Assistant", value=True)
+    use_blockchain = st.checkbox("Blockchain Assistant", value=True)
+    use_cryptocurrency = st.checkbox("Cryptocurrency Assistant", value=True)
+    use_tokenomics = st.checkbox("Tokenomics Assistant", value=True)
+    use_economics = st.checkbox("Economics Assistant", value=True)
+    use_cybersec_offense = st.checkbox("Cybersecurity Offense Assistant", value=True)
+    use_cybersec_defense = st.checkbox("Cybersecurity Defense Assistant", value=True)
+    use_web3 = st.checkbox("Web3 Assistant", value=True)
+    use_entrepreneurship = st.checkbox("Entrepreneurship Assistant", value=True)
+    use_formula1 = st.checkbox("Formula 1 Assistant", value=True)
+    use_ai = st.checkbox("AI Assistant", value=True)
+    use_microchip = st.checkbox("Microchip Supply Chain Assistant", value=True)
+    use_opensource = st.checkbox("Open Source Supply Chain Assistant", value=True)
+    use_nuclear = st.checkbox("Nuclear Energy Assistant", value=True)
+    use_louisiana_vc = st.checkbox("Louisiana VC Assistant", value=True)
+    use_data_acquisition = st.checkbox("Data Acquisition Assistant", value=True)
+    use_data_analysis = st.checkbox("Data Analysis Assistant", value=True)
+    
     st.divider()
     if st.button("🛑 Stop Session", type="primary"):
         st.stop()
@@ -220,6 +270,42 @@ if use_web_browser:
     teacher_tools.append(web_browser_assistant)
 if use_general:
     teacher_tools.append(general_assistant)
+if use_psychology:
+    teacher_tools.append(psychology_assistant)
+if use_cryptography:
+    teacher_tools.append(cryptography_assistant)
+if use_blockchain:
+    teacher_tools.append(blockchain_assistant)
+if use_cryptocurrency:
+    teacher_tools.append(cryptocurrency_assistant)
+if use_tokenomics:
+    teacher_tools.append(tokenomics_assistant)
+if use_economics:
+    teacher_tools.append(economics_assistant)
+if use_cybersec_offense:
+    teacher_tools.append(cybersecurity_offense_assistant)
+if use_cybersec_defense:
+    teacher_tools.append(cybersecurity_defense_assistant)
+if use_web3:
+    teacher_tools.append(web3_assistant)
+if use_entrepreneurship:
+    teacher_tools.append(entrepreneurship_assistant)
+if use_formula1:
+    teacher_tools.append(formula1_assistant)
+if use_ai:
+    teacher_tools.append(ai_assistant)
+if use_microchip:
+    teacher_tools.append(microchip_supply_chain_assistant)
+if use_opensource:
+    teacher_tools.append(opensource_supply_chain_assistant)
+if use_nuclear:
+    teacher_tools.append(nuclear_energy_assistant)
+if use_louisiana_vc:
+    teacher_tools.append(louisiana_vc_assistant)
+if use_data_acquisition:
+    teacher_tools.append(data_acquisition_assistant)
+if use_data_analysis:
+    teacher_tools.append(data_analysis_assistant)
 
 teacher_agent = Agent(
     system_prompt=TEACHER_SYSTEM_PROMPT,
@@ -254,16 +340,36 @@ for i, tab in enumerate(tabs):
                     router_agent = Agent(tools=[use_llm])
                     action = determine_action(router_agent, prompt)
                     
+                    from datetime import datetime
+                    import pytz
+                    
+                    # Get user's timezone from browser
+                    user_tz = st.session_state.get('user_timezone', 'UTC')
+                    try:
+                        tz = pytz.timezone(user_tz)
+                        user_time = datetime.now(tz)
+                        current_datetime = user_time.strftime("%A, %B %d, %Y at %I:%M %p %Z")
+                    except:
+                        current_datetime = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
+                    
                     context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.tab_messages[tab_id][-10:]])
-                    full_prompt = f"Context: {context}\n\nCurrent question: {prompt}" if context else prompt
+                    datetime_context = f"Current date and time for user: {current_datetime}\n\n"
+                    full_prompt = f"{datetime_context}Context: {context}\n\nCurrent question: {prompt}" if context else f"{datetime_context}Current question: {prompt}"
                     
                     if action == "teacher":
-                        if any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit']):
+                        if any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit', 'current', 'today', 'now', 'latest', 'real-time']):
                             try:
-                                content = web_browser_assistant(prompt)
+                                # Try web browser first, fallback to research assistant
+                                if any(word in prompt.lower() for word in ['.com', 'website', 'browse', 'visit']):
+                                    content = web_browser_assistant(prompt)
+                                else:
+                                    content = research_assistant(prompt)
                             except Exception as e:
-                                response = teacher_agent(full_prompt)
-                                content = str(response)
+                                try:
+                                    content = research_assistant(prompt)
+                                except:
+                                    response = teacher_agent(full_prompt)
+                                    content = str(response)
                         else:
                             response = teacher_agent(full_prompt)
                             content = str(response)
@@ -278,7 +384,18 @@ for i, tab in enumerate(tabs):
                             else:
                                 content = kb_result
                     
+                    # Display main content
                     st.markdown(content)
+                    
+                    # Add expandable reference section if references exist
+                    if "**References Used:**" in content:
+                        with st.expander("📚 View References & Assistant Details"):
+                            ref_start = content.find("**References Used:**")
+                            if ref_start != -1:
+                                references = content[ref_start:]
+                                st.markdown(references)
+                                st.markdown(f"**Assistant Used:** {action.title()} Mode")
+                    
                     st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": content})
                     
                 except Exception as e:

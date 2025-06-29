@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from web_browser_assistant import web_browser_assistant
 import json
 
 GENERAL_ASSISTANT_SYSTEM_PROMPT = """

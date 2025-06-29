@@ -8,3 +8,4 @@ strands-agents
 strands-agents-tools[mem0_memory]
 streamlit
 streamlit-cognito-auth
+pytz

@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from web_browser_assistant import web_browser_assistant
 import requests
 import urllib.parse
 import json
