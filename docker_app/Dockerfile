@@ -7,3 +7,4 @@ COPY . .
 
 # Command overriden by docker-compose
 CMD streamlit run app.py
+# Force rebuild
