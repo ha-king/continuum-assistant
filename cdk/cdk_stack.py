@@ -22,11 +22,13 @@ CUSTOM_HEADER_NAME = "X-Custom-Header"
 
 class CdkStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, env_name: str = "prod", **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        
+        self.env_name = env_name
 
         # Define prefix that will be used in some resource names
-        prefix = Config.STACK_NAME
+        prefix = f"{Config.STACK_NAME}{env_name.title()}"
 
         # Create Cognito user pool
         user_pool = cognito.UserPool(self, f"{prefix}UserPool")
@@ -47,7 +49,7 @@ class CdkStack(Stack):
                                        # This secret name should be identical
                                        # to the one defined in the Streamlit
                                        # container
-                                       secret_name=Config.SECRETS_MANAGER_ID
+                                       secret_name=f"{Config.SECRETS_MANAGER_ID}-{env_name}"
                                        )
 
 
@@ -118,6 +120,9 @@ class CdkStack(Stack):
                     container_port=8501,
                     protocol=ecs.Protocol.TCP)],
             logging=ecs.LogDrivers.aws_logs(stream_prefix="WebContainerLogs"),
+            environment={
+                "ENVIRONMENT": env_name
+            }
         )
 
         service = ecs.FargateService(
@@ -211,7 +216,13 @@ class CdkStack(Stack):
         CfnOutput(self, "CognitoPoolId",
                   value=user_pool.user_pool_id)
 
-        # CI/CD Pipeline
+        # CI/CD Pipeline for both environments
+        # GitHub token secret
+        github_token = secretsmanager.Secret.from_secret_name_v2(
+            self, f"{prefix}GitHubToken",
+            secret_name="github-token"
+        )
+
         source_output = codepipeline.Artifact()
         build_output = codepipeline.Artifact()
 
@@ -233,7 +244,7 @@ class CdkStack(Stack):
                     },
                     "build": {
                         "commands": [
-                            "cdk deploy --require-approval never"
+                            f"cdk deploy {construct_id} --app 'python3 app_dev.py' --require-approval never" if env_name == "dev" else "cdk deploy --require-approval never"
                         ]
                     }
                 }
@@ -261,8 +272,8 @@ class CdkStack(Stack):
                             action_name="GitHub_Source",
                             owner="ha-king",
                             repo="continuum-assistant",
-                            branch="main",
-                            oauth_token=SecretValue.secrets_manager("github-token"),
+                            branch="main" if env_name == "prod" else "dev",
+                            oauth_token=github_token.secret_value,
                             output=source_output
                         )
                     ]
@@ -282,3 +293,5 @@ class CdkStack(Stack):
         )
 
         CfnOutput(self, "PipelineArn", value=pipeline.pipeline_arn)
+        
+        CfnOutput(self, "Environment", value=env_name)

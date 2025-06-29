@@ -11,6 +11,10 @@ class Config:
     # When you delete a secret, you cannot create another one immediately
     # with the same name. Change this value if you destroy your stack and need
     # to recreate it with the same STACK_NAME.
+    @classmethod
+    def get_secrets_manager_id(cls, env="prod"):
+        return f"{cls.STACK_NAME}ParamCognitoSecret12345-{env}"
+    
     SECRETS_MANAGER_ID = f"{STACK_NAME}ParamCognitoSecret12345"
 
     # AWS region in which you want to deploy the cdk stack

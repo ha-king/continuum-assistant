@@ -37,8 +37,12 @@ from config_file import Config
 
 # Authentication setup
 try:
+    # Detect environment from environment variable or default to prod
+    env = os.environ.get("ENVIRONMENT", "prod")
+    secret_id = Config.get_secrets_manager_id(env)
+    
     authenticator = Auth.get_authenticator(
-        secret_id=Config.SECRETS_MANAGER_ID,
+        secret_id=secret_id,
         region=Config.DEPLOYMENT_REGION
     )
     
