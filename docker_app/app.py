@@ -36,25 +36,28 @@ from utils.auth import Auth
 from config_file import Config
 
 # Authentication setup
-try:
-    # Detect environment from environment variable or default to prod
-    env = os.environ.get("ENVIRONMENT", "prod")
-    secret_id = Config.get_secrets_manager_id(env)
-    
-    authenticator = Auth.get_authenticator(
-        secret_id=secret_id,
-        region=Config.DEPLOYMENT_REGION
-    )
-    
-    # Check authentication
-    is_logged_in = authenticator.login()
-    
-    if not is_logged_in:
-        st.stop()
+if os.environ.get("LOCAL_DEV"):
+    st.write("🔓 **Local Development Mode** - Authentication bypassed")
+else:
+    try:
+        # Detect environment from environment variable or default to prod
+        env = os.environ.get("ENVIRONMENT", "prod")
+        secret_id = Config.get_secrets_manager_id(env)
         
-except Exception as e:
-    st.error(f"Authentication error: {str(e)}")
-    st.stop()
+        authenticator = Auth.get_authenticator(
+            secret_id=secret_id,
+            region=Config.DEPLOYMENT_REGION
+        )
+        
+        # Check authentication
+        is_logged_in = authenticator.login()
+        
+        if not is_logged_in:
+            st.stop()
+            
+    except Exception as e:
+        st.error(f"Authentication error: {str(e)}")
+        st.stop()
 
 TEACHER_SYSTEM_PROMPT = """
 You are TeachAssist, a sophisticated educational orchestrator with ACTIVE WEB BROWSING CAPABILITIES. Your role is to:
