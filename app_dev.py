@@ -3,6 +3,8 @@ import aws_cdk as cdk
 from cdk.cdk_stack import CdkStack
 
 app = cdk.App()
-# Production environment (existing)
-CdkStack(app, "StreamlitAssistantStack", env_name="prod")
+
+# Development environment (new)
+CdkStack(app, "StreamlitAssistantStackDev", env_name="dev")
+
 app.synth()
