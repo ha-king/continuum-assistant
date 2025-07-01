@@ -394,6 +394,10 @@ def create_teacher_agent_with_datetime():
 You MUST include this current date/time and location information when calling ANY specialized agent tool.
 When routing queries to specialized agents, always prepend the user context to ensure they have temporal and geographical awareness.
 
+*** TIME/DATE QUERIES ***:
+If user asks "what time is it", "what day is it", "current time", "current date", or similar:
+Respond directly with: "It is {user_context.strip()}" - DO NOT route to other agents.
+
 AVAILABLE ASSISTANTS (Updated):
 - Automotive Assistant: For auto mechanics, repair diagnosis, suspension systems, steering alignment, electrical diagrams, and electronics
 """
@@ -443,7 +447,11 @@ for i, tab in enumerate(tabs):
                     query_context = f"User query at {get_current_datetime()}: {prompt}"
                     
                     if action == "teacher":
-                        if any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit', 'current', 'today', 'now', 'latest', 'real-time']):
+                        # Handle direct time/date queries
+                        time_keywords = ['what time', 'what day', 'current time', 'current date', 'time is it', 'day is it']
+                        if any(keyword in prompt.lower() for keyword in time_keywords):
+                            content = f"It is {get_current_datetime()}"
+                        elif any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit', 'current', 'today', 'now', 'latest', 'real-time']):
                             try:
                                 # Try web browser first, fallback to research assistant
                                 if any(word in prompt.lower() for word in ['.com', 'website', 'browse', 'visit']):
