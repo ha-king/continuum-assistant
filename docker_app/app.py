@@ -332,7 +332,7 @@ if use_data_analysis:
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
     current_datetime = get_current_datetime()
-    enhanced_prompt = f"{TEACHER_SYSTEM_PROMPT}
+    enhanced_prompt = f"""{TEACHER_SYSTEM_PROMPT}
 
 *** CRITICAL DATETIME INSTRUCTION ***:
 Current date and time: {current_datetime}
