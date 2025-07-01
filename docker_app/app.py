@@ -32,6 +32,7 @@ from nuclear_energy_assistant import nuclear_energy_assistant
 from louisiana_vc_assistant import louisiana_vc_assistant
 from data_acquisition_assistant import data_acquisition_assistant
 from data_analysis_assistant import data_analysis_assistant
+from automotive_assistant import automotive_assistant
 from utils.auth import Auth
 from config_file import Config
 
@@ -72,6 +73,16 @@ def get_current_datetime():
     except:
         return datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
 
+def get_user_context():
+    """Get user context including location and timezone"""
+    context = f"Current date and time: {get_current_datetime()}\n"
+    
+    location = st.session_state.get('user_location')
+    if location:
+        context += f"User location: Latitude {location['latitude']:.4f}, Longitude {location['longitude']:.4f}\n"
+    
+    return context + "\n"
+
 TEACHER_SYSTEM_PROMPT = """
 You are TeachAssist, a sophisticated educational orchestrator with ACTIVE WEB BROWSING CAPABILITIES. 
 You have access to current date and time information which you must provide to all specialized agents.
@@ -92,6 +103,7 @@ Your role is to:
    - Louisiana Legal Assistant: For Louisiana business legal matters and compliance
    - Web Browser Assistant: *** ACTIVE AND FUNCTIONAL *** For real-time website browsing, content analysis, company research, and any website-related queries
    - General Assistant: For all other topics outside these specialized domains
+   - Automotive Assistant: For auto mechanics, repair diagnosis, suspension systems, steering alignment, electrical diagrams, and electronics
 
    IMPORTANT: The Web Browser Assistant IS AVAILABLE AND FUNCTIONAL - use it for ANY website-related queries.
 
@@ -115,6 +127,7 @@ Your role is to:
    - If query involves browsing websites/viewing web content/website analysis/company information → Web Browser Assistant
    - If query mentions specific websites (like .com, .org) or asks to "browse" or "visit" → Web Browser Assistant
    - If query asks about company offerings, services, or business analysis → Web Browser Assistant
+   - If query involves automotive repair, mechanics, car diagnostics, suspension, alignment, or car electronics → Automotive Assistant
    - If query is outside these specialized areas → General Assistant
    - For complex queries, coordinate multiple agents as needed
 
@@ -144,6 +157,23 @@ def determine_action(agent, query):
         return "knowledge"
     return "teacher"
 
+def store_knowledge(content, query_context):
+    """Store non-redundant information in knowledge base"""
+    if not os.environ.get("KNOWLEDGE_BASE_ID"):
+        return
+    
+    try:
+        agent = Agent(tools=[memory, use_llm])
+        
+        # Check for existing similar content
+        existing = agent.tool.memory(action="retrieve", query=content[:100], min_score=0.8, max_results=3)
+        
+        # Only store if not redundant
+        if not existing or len(str(existing).strip()) < 50:
+            agent.tool.memory(action="store", content=f"{query_context}\nLearned: {content}")
+    except Exception:
+        pass
+
 def run_kb_agent(query, datetime_context):
     if not os.environ.get("KNOWLEDGE_BASE_ID"):
         return "Knowledge base is not configured. Please use the teacher mode for educational questions."
@@ -160,6 +190,10 @@ def run_kb_agent(query, datetime_context):
                 prompt=f"{datetime_context}User question: \"{query}\"\n\nInformation: {str(result)}\n\nProvide a helpful answer:",
                 system_prompt="You are a helpful knowledge assistant that provides clear, concise answers based on information retrieved from a knowledge base."
             )
+            
+            # Store new knowledge from the response
+            store_knowledge(str(answer), f"Query: {query}")
+            
             return str(answer)
     except Exception:
         return "Knowledge base is not configured. Please use the teacher mode for educational questions."
@@ -171,17 +205,35 @@ def run_memory_agent(query, datetime_context):
 
 st.title("🔒 Son of Anton")
 
-# Get user's timezone from browser JavaScript
-if 'user_timezone' not in st.session_state:
+# Get user's timezone and geolocation from browser JavaScript
+if 'user_timezone' not in st.session_state or 'user_location' not in st.session_state:
     st.components.v1.html("""
     <script>
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     window.parent.postMessage({type: 'timezone', value: timezone}, '*');
+    
+    // Get geolocation if available
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const location = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy
+                };
+                window.parent.postMessage({type: 'location', value: location}, '*');
+            },
+            function(error) {
+                window.parent.postMessage({type: 'location', value: null}, '*');
+            }
+        );
+    }
     </script>
     """, height=0)
     
-    # Listen for timezone message
-    st.session_state.user_timezone = 'UTC'  # Default fallback
+    # Set defaults
+    st.session_state.user_timezone = 'UTC'
+    st.session_state.user_location = None
 
 if "tab_ids" not in st.session_state:
     st.session_state.tab_ids = [0]
@@ -260,6 +312,7 @@ with st.sidebar:
     use_louisiana_vc = st.checkbox("Louisiana VC Assistant", value=True)
     use_data_acquisition = st.checkbox("Data Acquisition Assistant", value=True)
     use_data_analysis = st.checkbox("Data Analysis Assistant", value=True)
+    use_automotive = st.checkbox("Automotive Assistant", value=True)
     
     st.divider()
     if st.button("🛑 Stop Session", type="primary"):
@@ -328,16 +381,21 @@ if use_data_acquisition:
     teacher_tools.append(data_acquisition_assistant)
 if use_data_analysis:
     teacher_tools.append(data_analysis_assistant)
+if use_automotive:
+    teacher_tools.append(automotive_assistant)
 
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
-    current_datetime = get_current_datetime()
+    user_context = get_user_context()
     enhanced_prompt = f"""{TEACHER_SYSTEM_PROMPT}
 
-*** CRITICAL DATETIME INSTRUCTION ***:
-Current date and time: {current_datetime}
-You MUST include this current date/time information when calling ANY specialized agent tool.
-When routing queries to specialized agents, always prepend the current datetime context to ensure they have temporal awareness.
+*** CRITICAL CONTEXT INSTRUCTION ***:
+{user_context}
+You MUST include this current date/time and location information when calling ANY specialized agent tool.
+When routing queries to specialized agents, always prepend the user context to ensure they have temporal and geographical awareness.
+
+AVAILABLE ASSISTANTS (Updated):
+- Automotive Assistant: For auto mechanics, repair diagnosis, suspension systems, steering alignment, electrical diagrams, and electronics
 """
     return Agent(
         system_prompt=enhanced_prompt,
@@ -371,15 +429,18 @@ for i, tab in enumerate(tabs):
             
             with st.chat_message("assistant"):
                 try:
-                    # Get current datetime for orchestrator and all agents
-                    current_datetime = get_current_datetime()
-                    datetime_context = f"Current date and time: {current_datetime}\n\n"
+                    # Get current datetime and user context for orchestrator and all agents
+                    user_context = get_user_context()
+                    datetime_context = user_context
                     
                     router_agent = Agent(tools=[use_llm])
                     action = determine_action(router_agent, prompt)
                     
                     context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.tab_messages[tab_id][-10:]])
                     full_prompt = f"{datetime_context}Context: {context}\n\nCurrent question: {prompt}" if context else f"{datetime_context}Current question: {prompt}"
+                    
+                    # Store user query context for knowledge base
+                    query_context = f"User query at {get_current_datetime()}: {prompt}"
                     
                     if action == "teacher":
                         if any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit', 'current', 'today', 'now', 'latest', 'real-time']):
@@ -400,6 +461,9 @@ for i, tab in enumerate(tabs):
                             teacher_agent = create_teacher_agent_with_datetime()
                             response = teacher_agent(full_prompt)
                             content = str(response)
+                            
+                            # Store knowledge from response
+                            store_knowledge(content, query_context)
                     else:
                         if memory_backend == "OpenSearch Memory":
                             content = run_memory_agent(full_prompt, datetime_context)
@@ -410,6 +474,9 @@ for i, tab in enumerate(tabs):
                                 teacher_agent = create_teacher_agent_with_datetime()
                                 response = teacher_agent(full_prompt)
                                 content = str(response)
+                                
+                                # Store knowledge from response
+                                store_knowledge(content, query_context)
                             else:
                                 content = kb_result
                     
