@@ -59,8 +59,23 @@ else:
         st.error(f"Authentication error: {str(e)}")
         st.stop()
 
+def get_current_datetime():
+    """Get current datetime formatted for user's timezone"""
+    from datetime import datetime
+    import pytz
+    
+    user_tz = st.session_state.get('user_timezone', 'UTC')
+    try:
+        tz = pytz.timezone(user_tz)
+        user_time = datetime.now(tz)
+        return user_time.strftime("%A, %B %d, %Y at %I:%M %p %Z")
+    except:
+        return datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
+
 TEACHER_SYSTEM_PROMPT = """
-You are TeachAssist, a sophisticated educational orchestrator with ACTIVE WEB BROWSING CAPABILITIES. Your role is to:
+You are TeachAssist, a sophisticated educational orchestrator with ACTIVE WEB BROWSING CAPABILITIES. 
+You have access to current date and time information which you must provide to all specialized agents.
+Your role is to:
 
 1. Analyze incoming student queries and determine the most appropriate specialized agent to handle them:
 
@@ -129,7 +144,7 @@ def determine_action(agent, query):
         return "knowledge"
     return "teacher"
 
-def run_kb_agent(query):
+def run_kb_agent(query, datetime_context):
     if not os.environ.get("KNOWLEDGE_BASE_ID"):
         return "Knowledge base is not configured. Please use the teacher mode for educational questions."
     
@@ -142,15 +157,15 @@ def run_kb_agent(query):
         else:
             result = agent.tool.memory(action="retrieve", query=query, min_score=0.4, max_results=9)
             answer = agent.tool.use_llm(
-                prompt=f"User question: \"{query}\"\n\nInformation: {str(result)}\n\nProvide a helpful answer:",
+                prompt=f"{datetime_context}User question: \"{query}\"\n\nInformation: {str(result)}\n\nProvide a helpful answer:",
                 system_prompt="You are a helpful knowledge assistant that provides clear, concise answers based on information retrieved from a knowledge base."
             )
             return str(answer)
     except Exception:
         return "Knowledge base is not configured. Please use the teacher mode for educational questions."
 
-def run_memory_agent(query):
-    agent = Agent(system_prompt="You are a personal assistant that maintains context by remembering user details.", tools=[mem0_memory, use_llm])
+def run_memory_agent(query, datetime_context):
+    agent = Agent(system_prompt=f"You are a personal assistant that maintains context by remembering user details. {datetime_context}", tools=[mem0_memory, use_llm])
     response = agent(query)
     return str(response)
 
@@ -314,11 +329,23 @@ if use_data_acquisition:
 if use_data_analysis:
     teacher_tools.append(data_analysis_assistant)
 
-teacher_agent = Agent(
-    system_prompt=TEACHER_SYSTEM_PROMPT,
-    callback_handler=None,
-    tools=teacher_tools
-)
+# Create teacher agent with datetime awareness
+def create_teacher_agent_with_datetime():
+    current_datetime = get_current_datetime()
+    enhanced_prompt = f"{TEACHER_SYSTEM_PROMPT}
+
+*** CRITICAL DATETIME INSTRUCTION ***:
+Current date and time: {current_datetime}
+You MUST include this current date/time information when calling ANY specialized agent tool.
+When routing queries to specialized agents, always prepend the current datetime context to ensure they have temporal awareness.
+"""
+    return Agent(
+        system_prompt=enhanced_prompt,
+        callback_handler=None,
+        tools=teacher_tools
+    )
+
+teacher_agent = create_teacher_agent_with_datetime()
 
 if "tab_messages" not in st.session_state:
     st.session_state.tab_messages = {}
@@ -344,23 +371,14 @@ for i, tab in enumerate(tabs):
             
             with st.chat_message("assistant"):
                 try:
+                    # Get current datetime for orchestrator and all agents
+                    current_datetime = get_current_datetime()
+                    datetime_context = f"Current date and time: {current_datetime}\n\n"
+                    
                     router_agent = Agent(tools=[use_llm])
                     action = determine_action(router_agent, prompt)
                     
-                    from datetime import datetime
-                    import pytz
-                    
-                    # Get user's timezone from browser
-                    user_tz = st.session_state.get('user_timezone', 'UTC')
-                    try:
-                        tz = pytz.timezone(user_tz)
-                        user_time = datetime.now(tz)
-                        current_datetime = user_time.strftime("%A, %B %d, %Y at %I:%M %p %Z")
-                    except:
-                        current_datetime = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
-                    
                     context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.tab_messages[tab_id][-10:]])
-                    datetime_context = f"Current date and time for user: {current_datetime}\n\n"
                     full_prompt = f"{datetime_context}Context: {context}\n\nCurrent question: {prompt}" if context else f"{datetime_context}Current question: {prompt}"
                     
                     if action == "teacher":
@@ -368,24 +386,28 @@ for i, tab in enumerate(tabs):
                             try:
                                 # Try web browser first, fallback to research assistant
                                 if any(word in prompt.lower() for word in ['.com', 'website', 'browse', 'visit']):
-                                    content = web_browser_assistant(prompt)
+                                    content = web_browser_assistant(f"{datetime_context}{prompt}")
                                 else:
-                                    content = research_assistant(prompt)
+                                    content = research_assistant(f"{datetime_context}{prompt}")
                             except Exception as e:
                                 try:
-                                    content = research_assistant(prompt)
+                                    content = research_assistant(f"{datetime_context}{prompt}")
                                 except:
                                     response = teacher_agent(full_prompt)
                                     content = str(response)
                         else:
+                            # Recreate teacher agent with fresh datetime for each request
+                            teacher_agent = create_teacher_agent_with_datetime()
                             response = teacher_agent(full_prompt)
                             content = str(response)
                     else:
                         if memory_backend == "OpenSearch Memory":
-                            content = run_memory_agent(full_prompt)
+                            content = run_memory_agent(full_prompt, datetime_context)
                         else:
-                            kb_result = run_kb_agent(full_prompt)
+                            kb_result = run_kb_agent(full_prompt, datetime_context)
                             if "Knowledge base is not configured" in kb_result:
+                                # Recreate teacher agent with fresh datetime for each request
+                                teacher_agent = create_teacher_agent_with_datetime()
                                 response = teacher_agent(full_prompt)
                                 content = str(response)
                             else:
