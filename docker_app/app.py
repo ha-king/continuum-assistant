@@ -33,6 +33,10 @@ from louisiana_vc_assistant import louisiana_vc_assistant
 from data_acquisition_assistant import data_acquisition_assistant
 from data_analysis_assistant import data_analysis_assistant
 from automotive_assistant import automotive_assistant
+from business_contact_assistant import business_contact_assistant
+from public_records_assistant import public_records_assistant
+from professional_networking_assistant import professional_networking_assistant
+from company_intelligence_assistant import company_intelligence_assistant
 from utils.auth import Auth
 from config_file import Config
 
@@ -128,6 +132,10 @@ Your role is to:
    - If query mentions specific websites (like .com, .org) or asks to "browse" or "visit" → Web Browser Assistant
    - If query asks about company offerings, services, or business analysis → Web Browser Assistant
    - If query involves automotive repair, mechanics, car diagnostics, suspension, alignment, or car electronics → Automotive Assistant
+   - If query involves business contact research or company contact information → Business Contact Assistant
+   - If query involves public records research or legal compliance → Public Records Assistant
+   - If query involves professional networking or business development → Professional Networking Assistant
+   - If query involves competitive analysis or company intelligence → Company Intelligence Assistant
    - If query is outside these specialized areas → General Assistant
    - For complex queries, coordinate multiple agents as needed
 
@@ -314,6 +322,12 @@ with st.sidebar:
     use_data_analysis = st.checkbox("Data Analysis Assistant", value=True)
     use_automotive = st.checkbox("Automotive Assistant", value=True)
     
+    st.subheader("Business Research")
+    use_business_contact = st.checkbox("Business Contact Assistant", value=True)
+    use_public_records = st.checkbox("Public Records Assistant", value=True)
+    use_professional_networking = st.checkbox("Professional Networking Assistant", value=True)
+    use_company_intelligence = st.checkbox("Company Intelligence Assistant", value=True)
+    
     st.divider()
     if st.button("🛑 Stop Session", type="primary"):
         st.stop()
@@ -383,6 +397,14 @@ if use_data_analysis:
     teacher_tools.append(data_analysis_assistant)
 if use_automotive:
     teacher_tools.append(automotive_assistant)
+if use_business_contact:
+    teacher_tools.append(business_contact_assistant)
+if use_public_records:
+    teacher_tools.append(public_records_assistant)
+if use_professional_networking:
+    teacher_tools.append(professional_networking_assistant)
+if use_company_intelligence:
+    teacher_tools.append(company_intelligence_assistant)
 
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
@@ -400,6 +422,10 @@ Respond directly with: "It is {user_context.strip()}" - DO NOT route to other ag
 
 AVAILABLE ASSISTANTS (Updated):
 - Automotive Assistant: For auto mechanics, repair diagnosis, suspension systems, steering alignment, electrical diagrams, and electronics
+- Business Contact Assistant: For finding legitimate business contact information and company contacts
+- Public Records Assistant: For public records research and legal compliance guidance
+- Professional Networking Assistant: For business networking and professional relationship building
+- Company Intelligence Assistant: For competitive analysis and business intelligence research
 """
     return Agent(
         system_prompt=enhanced_prompt,
