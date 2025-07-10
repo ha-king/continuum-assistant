@@ -39,6 +39,7 @@ from professional_networking_assistant import professional_networking_assistant
 from company_intelligence_assistant import company_intelligence_assistant
 from geopolitical_assistant import geopolitical_assistant
 from international_finance_assistant import international_finance_assistant
+from predictive_analysis_assistant import predictive_analysis_assistant
 from utils.auth import Auth
 from config_file import Config
 
@@ -140,6 +141,7 @@ Your role is to:
    - If query involves competitive analysis or company intelligence → Company Intelligence Assistant
    - If query involves geopolitical analysis or international relations → Geopolitical Assistant
    - If query involves international finance or global monetary systems → International Finance Assistant
+   - If query involves forecasting, predictive modeling, or statistical analysis → Predictive Analysis Assistant
    - If query is outside these specialized areas → General Assistant
    - For complex queries, coordinate multiple agents as needed
 
@@ -291,52 +293,64 @@ with st.sidebar:
     
     memory_backend = st.selectbox("Memory Backend:", memory_options)
     
-    st.subheader("Teacher Agents")
-    use_math = st.checkbox("Math Assistant", value=True)
-    use_english = st.checkbox("English Assistant", value=True)
-    use_language = st.checkbox("Language Assistant", value=True)
-    use_cs = st.checkbox("Computer Science Assistant", value=True)
-    use_financial = st.checkbox("Financial Assistant", value=True)
-    use_aws = st.checkbox("AWS Assistant", value=True)
-    use_business_dev = st.checkbox("Business Dev Assistant", value=True)
-    use_lafayette_economic = st.checkbox("Lafayette Economic Assistant", value=True)
-    use_research = st.checkbox("Research Assistant", value=True)
-    use_louisiana_legal = st.checkbox("Louisiana Legal Assistant", value=True)
-    use_web_browser = st.checkbox("Web Browser Assistant", value=True)
-    use_general = st.checkbox("General Assistant", value=True)
+    assistant_mode = st.selectbox(
+        "Assistant Mode:",
+        ["All Assistants (Auto-Route)", "Advanced Configuration"]
+    )
     
-    st.subheader("Specialized Experts")
-    use_psychology = st.checkbox("Psychology Assistant", value=True)
-    use_cryptography = st.checkbox("Cryptography Assistant", value=True)
-    use_blockchain = st.checkbox("Blockchain Assistant", value=True)
-    use_cryptocurrency = st.checkbox("Cryptocurrency Assistant", value=True)
-    use_tokenomics = st.checkbox("Tokenomics Assistant", value=True)
-    use_economics = st.checkbox("Economics Assistant", value=True)
-    use_cybersec_offense = st.checkbox("Cybersecurity Offense Assistant", value=True)
-    use_cybersec_defense = st.checkbox("Cybersecurity Defense Assistant", value=True)
-    use_web3 = st.checkbox("Web3 Assistant", value=True)
-    use_entrepreneurship = st.checkbox("Entrepreneurship Assistant", value=True)
-    use_formula1 = st.checkbox("Formula 1 Assistant", value=True)
-    use_ai = st.checkbox("AI Assistant", value=True)
-    use_microchip = st.checkbox("Microchip Supply Chain Assistant", value=True)
-    use_opensource = st.checkbox("Open Source Supply Chain Assistant", value=True)
-    use_nuclear = st.checkbox("Nuclear Energy Assistant", value=True)
-    use_louisiana_vc = st.checkbox("Louisiana VC Assistant", value=True)
-    use_data_acquisition = st.checkbox("Data Acquisition Assistant", value=True)
-    use_data_analysis = st.checkbox("Data Analysis Assistant", value=True)
-    use_automotive = st.checkbox("Automotive Assistant", value=True)
-    
-    st.subheader("Business Research")
-    use_business_contact = st.checkbox("Business Contact Assistant", value=True)
-    use_public_records = st.checkbox("Public Records Assistant", value=True)
-    use_professional_networking = st.checkbox("Professional Networking Assistant", value=True)
-    use_company_intelligence = st.checkbox("Company Intelligence Assistant", value=True)
-    
-    st.subheader("Global Analysis")
-    use_geopolitical = st.checkbox("Geopolitical Assistant", value=True)
-    use_international_finance = st.checkbox("International Finance Assistant", value=True)
+    if assistant_mode == "Advanced Configuration":
+        with st.expander("🎯 Core Assistants", expanded=False):
+            use_math = st.checkbox("Math", value=True)
+            use_english = st.checkbox("English", value=True)
+            use_cs = st.checkbox("Computer Science", value=True)
+            use_financial = st.checkbox("Financial", value=True)
+            use_aws = st.checkbox("AWS", value=True)
+            use_research = st.checkbox("Research", value=True)
+            use_web_browser = st.checkbox("Web Browser", value=True)
+        
+        with st.expander("🏢 Business & Finance", expanded=False):
+            use_business_dev = st.checkbox("Business Development", value=True)
+            use_business_contact = st.checkbox("Business Contacts", value=True)
+            use_company_intelligence = st.checkbox("Company Intelligence", value=True)
+            use_economics = st.checkbox("Economics", value=True)
+            use_entrepreneurship = st.checkbox("Entrepreneurship", value=True)
+        
+        with st.expander("🌍 Global & Legal", expanded=False):
+            use_geopolitical = st.checkbox("Geopolitical", value=True)
+            use_international_finance = st.checkbox("International Finance", value=True)
+            use_louisiana_legal = st.checkbox("Louisiana Legal", value=True)
+            use_public_records = st.checkbox("Public Records", value=True)
+        
+        with st.expander("🔬 Technology & Security", expanded=False):
+            use_ai = st.checkbox("AI", value=True)
+            use_blockchain = st.checkbox("Blockchain", value=True)
+            use_cryptocurrency = st.checkbox("Cryptocurrency", value=True)
+            use_cybersec_defense = st.checkbox("Cybersecurity", value=True)
+            use_data_analysis = st.checkbox("Data Analysis", value=True)
+            use_predictive_analysis = st.checkbox("Predictive Analysis", value=True)
+        
+        # Set unused assistants to False in advanced mode
+        use_language = use_lafayette_economic = use_general = use_psychology = False
+        use_cryptography = use_tokenomics = use_cybersec_offense = use_web3 = False
+        use_formula1 = use_microchip = use_opensource = use_nuclear = False
+        use_louisiana_vc = use_data_acquisition = use_automotive = False
+        use_professional_networking = False
+    else:
+        # All assistants enabled in auto-route mode
+        use_math = use_english = use_language = use_cs = use_financial = use_aws = True
+        use_business_dev = use_lafayette_economic = use_research = use_louisiana_legal = True
+        use_web_browser = use_general = use_psychology = use_cryptography = True
+        use_blockchain = use_cryptocurrency = use_tokenomics = use_economics = True
+        use_cybersec_offense = use_cybersec_defense = use_web3 = use_entrepreneurship = True
+        use_formula1 = use_ai = use_microchip = use_opensource = use_nuclear = True
+        use_louisiana_vc = use_data_acquisition = use_data_analysis = use_automotive = True
+        use_business_contact = use_public_records = use_professional_networking = True
+        use_company_intelligence = use_geopolitical = use_international_finance = True
+        use_predictive_analysis = True
     
     st.divider()
+    st.caption(f"Active Assistants: {sum([use_math, use_english, use_language, use_cs, use_financial, use_aws, use_business_dev, use_lafayette_economic, use_research, use_louisiana_legal, use_web_browser, use_general, use_psychology, use_cryptography, use_blockchain, use_cryptocurrency, use_tokenomics, use_economics, use_cybersec_offense, use_cybersec_defense, use_web3, use_entrepreneurship, use_formula1, use_ai, use_microchip, use_opensource, use_nuclear, use_louisiana_vc, use_data_acquisition, use_data_analysis, use_automotive, use_business_contact, use_public_records, use_professional_networking, use_company_intelligence, use_geopolitical, use_international_finance, use_predictive_analysis])}")
+    
     if st.button("🛑 Stop Session", type="primary"):
         st.stop()
 
@@ -417,6 +431,8 @@ if use_geopolitical:
     teacher_tools.append(geopolitical_assistant)
 if use_international_finance:
     teacher_tools.append(international_finance_assistant)
+if use_predictive_analysis:
+    teacher_tools.append(predictive_analysis_assistant)
 
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
@@ -440,6 +456,7 @@ AVAILABLE ASSISTANTS (Updated):
 - Company Intelligence Assistant: For competitive analysis and business intelligence research
 - Geopolitical Assistant: For geopolitical analysis and international relations expertise
 - International Finance Assistant: For global finance and international monetary systems analysis
+- Predictive Analysis Assistant: For forecasting, predictive modeling, and statistical analysis with best practices
 """
     return Agent(
         system_prompt=enhanced_prompt,
