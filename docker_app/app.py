@@ -267,8 +267,8 @@ with st.sidebar:
         "us.amazon.nova-lite-v1:0", 
         "us.amazon.nova-micro-v1:0",
         "anthropic.claude-3-5-haiku-20241022-v1:0",
-        "anthropic.claude-3-7-sonnet-20250219-v1:0",
-        "anthropic.claude-sonnet-4-20250514-v1:0"
+        "anthropic.claude-3-5-sonnet-20241022-v1:0",
+        "anthropic.claude-3-opus-20240229-v1:0"
     ]
     selected_model = st.selectbox("Bedrock Model:", model_options)
     
