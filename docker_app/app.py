@@ -37,6 +37,8 @@ from business_contact_assistant import business_contact_assistant
 from public_records_assistant import public_records_assistant
 from professional_networking_assistant import professional_networking_assistant
 from company_intelligence_assistant import company_intelligence_assistant
+from geopolitical_assistant import geopolitical_assistant
+from international_finance_assistant import international_finance_assistant
 from utils.auth import Auth
 from config_file import Config
 
@@ -136,6 +138,8 @@ Your role is to:
    - If query involves public records research or legal compliance → Public Records Assistant
    - If query involves professional networking or business development → Professional Networking Assistant
    - If query involves competitive analysis or company intelligence → Company Intelligence Assistant
+   - If query involves geopolitical analysis or international relations → Geopolitical Assistant
+   - If query involves international finance or global monetary systems → International Finance Assistant
    - If query is outside these specialized areas → General Assistant
    - For complex queries, coordinate multiple agents as needed
 
@@ -328,6 +332,10 @@ with st.sidebar:
     use_professional_networking = st.checkbox("Professional Networking Assistant", value=True)
     use_company_intelligence = st.checkbox("Company Intelligence Assistant", value=True)
     
+    st.subheader("Global Analysis")
+    use_geopolitical = st.checkbox("Geopolitical Assistant", value=True)
+    use_international_finance = st.checkbox("International Finance Assistant", value=True)
+    
     st.divider()
     if st.button("🛑 Stop Session", type="primary"):
         st.stop()
@@ -405,6 +413,10 @@ if use_professional_networking:
     teacher_tools.append(professional_networking_assistant)
 if use_company_intelligence:
     teacher_tools.append(company_intelligence_assistant)
+if use_geopolitical:
+    teacher_tools.append(geopolitical_assistant)
+if use_international_finance:
+    teacher_tools.append(international_finance_assistant)
 
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
@@ -426,6 +438,8 @@ AVAILABLE ASSISTANTS (Updated):
 - Public Records Assistant: For public records research and legal compliance guidance
 - Professional Networking Assistant: For business networking and professional relationship building
 - Company Intelligence Assistant: For competitive analysis and business intelligence research
+- Geopolitical Assistant: For geopolitical analysis and international relations expertise
+- International Finance Assistant: For global finance and international monetary systems analysis
 """
     return Agent(
         system_prompt=enhanced_prompt,
