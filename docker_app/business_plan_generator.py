@@ -90,14 +90,16 @@ class BusinessPlanGenerator:
             response = self.bedrock.invoke_model(
                 modelId="us.amazon.nova-pro-v1:0",
                 body=json.dumps({
-                    "messages": [{"role": "user", "content": clarification_prompt}],
-                    "max_tokens": 300,
-                    "temperature": 0.3
+                    "messages": [{"role": "user", "content": [{"text": clarification_prompt}]}],
+                    "inferenceConfig": {
+                        "maxTokens": 300,
+                        "temperature": 0.3
+                    }
                 })
             )
             
             result = json.loads(response['body'].read())
-            return result.get('content', [{}])[0].get('text', 'No clarifying questions needed.')
+            return result.get('output', {}).get('message', {}).get('content', [{}])[0].get('text', 'No clarifying questions needed.')
             
         except Exception as e:
             return f"Error generating questions: {str(e)}"
@@ -126,14 +128,16 @@ class BusinessPlanGenerator:
             response = self.bedrock.invoke_model(
                 modelId="us.amazon.nova-pro-v1:0",
                 body=json.dumps({
-                    "messages": [{"role": "user", "content": section_prompt}],
-                    "max_tokens": 600,
-                    "temperature": 0.2
+                    "messages": [{"role": "user", "content": [{"text": section_prompt}]}],
+                    "inferenceConfig": {
+                        "maxTokens": 600,
+                        "temperature": 0.2
+                    }
                 })
             )
             
             result = json.loads(response['body'].read())
-            return result.get('content', [{}])[0].get('text', f'Error generating {section}')
+            return result.get('output', {}).get('message', {}).get('content', [{}])[0].get('text', f'Error generating {section}')
             
         except Exception as e:
             return f"Error generating {section}: {str(e)}"
