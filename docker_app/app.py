@@ -737,6 +737,48 @@ for i, tab in enumerate(tabs):
                     # Display personalized content
                     st.markdown(personalized_content)
                     
+                    # Add document generation option for substantial responses
+                    if len(personalized_content) > 200:
+                        with st.expander("📝 Generate Document from Response", expanded=False):
+                            col1, col2, col3 = st.columns(3)
+                            
+                            with col1:
+                                doc_title = st.text_input("Document Title:", value=f"Analysis Report - {datetime.now().strftime('%Y-%m-%d')}", key=f"doc_title_{tab_id}_{len(st.session_state.tab_messages[tab_id])}")
+                            
+                            with col2:
+                                if st.button("📎 Generate PDF", key=f"pdf_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"):
+                                    try:
+                                        pdf_data = create_custom_report_pdf(doc_title, personalized_content)
+                                        if pdf_data:
+                                            st.download_button(
+                                                label="📎 Download PDF",
+                                                data=pdf_data,
+                                                file_name=f"{doc_title.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                                                mime="application/pdf",
+                                                key=f"pdf_dl_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"
+                                            )
+                                        else:
+                                            st.error("PDF generation failed")
+                                    except Exception as e:
+                                        st.error(f"Error: {str(e)}")
+                            
+                            with col3:
+                                if st.button("📊 Generate PowerPoint", key=f"ppt_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"):
+                                    try:
+                                        pptx_data = create_custom_report_pptx(doc_title, personalized_content)
+                                        if pptx_data:
+                                            st.download_button(
+                                                label="📎 Download PPTX",
+                                                data=pptx_data,
+                                                file_name=f"{doc_title.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pptx",
+                                                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                                                key=f"ppt_dl_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"
+                                            )
+                                        else:
+                                            st.error("PowerPoint generation failed")
+                                    except Exception as e:
+                                        st.error(f"Error: {str(e)}")
+                    
                     # Add expandable reference section if references exist
                     if "**References Used:**" in content:
                         with st.expander("📚 View References & Assistant Details"):
