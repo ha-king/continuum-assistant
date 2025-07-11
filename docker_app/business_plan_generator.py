@@ -88,7 +88,7 @@ class BusinessPlanGenerator:
             """
             
             response = self.bedrock.invoke_model(
-                modelId="anthropic.claude-3-5-sonnet-20241022-v1:0",
+                modelId="us.amazon.nova-pro-v1:0",
                 body=json.dumps({
                     "messages": [{"role": "user", "content": clarification_prompt}],
                     "max_tokens": 300,
@@ -124,7 +124,7 @@ class BusinessPlanGenerator:
             """
             
             response = self.bedrock.invoke_model(
-                modelId="anthropic.claude-3-5-sonnet-20241022-v1:0",
+                modelId="us.amazon.nova-pro-v1:0",
                 body=json.dumps({
                     "messages": [{"role": "user", "content": section_prompt}],
                     "max_tokens": 600,
