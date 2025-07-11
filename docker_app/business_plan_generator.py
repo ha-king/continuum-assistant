@@ -216,10 +216,17 @@ class BusinessPlanGenerator:
                         from document_generator import create_custom_report_pdf
                         pdf_data = create_custom_report_pdf("Business Plan", st.session_state.generated_bp)
                         if pdf_data:
+                            user_id = st.session_state.get('user_id', 'user')
+                            business_name = st.session_state.bp_data.get('initial', 'business_plan')
+                            # Clean business name for filename
+                            clean_name = ''.join(c.lower() if c.isalnum() else '_' for c in business_name)[:20]
+                            timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+                            filename = f"{clean_name}_{user_id}_{timestamp}.pdf"
+                            
                             st.download_button(
                                 label="📄 Download PDF",
                                 data=pdf_data,
-                                file_name=f"business_plan_{datetime.now().strftime('%Y%m%d')}.pdf",
+                                file_name=filename,
                                 mime="application/pdf"
                             )
                 
@@ -228,10 +235,16 @@ class BusinessPlanGenerator:
                         from document_generator import create_custom_report_pptx
                         pptx_data = create_custom_report_pptx("Business Plan", st.session_state.generated_bp)
                         if pptx_data:
+                            user_id = st.session_state.get('user_id', 'user')
+                            business_name = st.session_state.bp_data.get('initial', 'business_plan')
+                            clean_name = ''.join(c.lower() if c.isalnum() else '_' for c in business_name)[:20]
+                            timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+                            filename = f"{clean_name}_{user_id}_{timestamp}.pptx"
+                            
                             st.download_button(
                                 label="📊 Download PPTX",
                                 data=pptx_data,
-                                file_name=f"business_plan_{datetime.now().strftime('%Y%m%d')}.pptx",
+                                file_name=filename,
                                 mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
                             )
         

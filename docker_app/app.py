@@ -12,6 +12,7 @@ from global_intelligence_system import get_global_market_status, get_timezone_in
 from multimodal_processor import create_multimodal_interface, process_uploaded_image, analyze_financial_chart
 from knowledge_graph_system import process_text_for_knowledge_graph, find_entity_connections, get_entity_network, analyze_knowledge_patterns, get_related_suggestions
 from document_generator import generate_crypto_report_pdf, generate_crypto_report_pptx, create_custom_report_pdf, create_custom_report_pptx
+from enhanced_pdf_generator import create_enhanced_pdf_report
 from business_plan_generator import create_business_plan_interface
 import asyncio
 from datetime import datetime
@@ -464,10 +465,12 @@ with st.expander("📄 Professional Tools Suite", expanded=False):
                     try:
                         pdf_data, _ = asyncio.run(generate_crypto_report_pdf(timeframe))
                         if pdf_data:
+                            user_id = st.session_state.get('user_id', 'user')
+                            timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+                            filename = f"crypto_analysis_{timeframe}_{user_id}_{timestamp}.pdf"
+                            
                             st.download_button(
-                                "Download PDF", pdf_data,
-                                f"crypto_{timeframe}_{datetime.now().strftime('%m%d')}.pdf",
-                                "application/pdf"
+                                "Download PDF", pdf_data, filename, "application/pdf"
                             )
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
@@ -522,12 +525,17 @@ with st.expander("📄 Professional Tools Suite", expanded=False):
                         agent = Agent()
                         full_prompt = f"Create a professional report on: {custom_prompt}. Current date: {datetime.now().strftime('%Y-%m-%d')}{context_data}"
                         content = str(agent(full_prompt))
-                        pdf_data = create_custom_report_pdf("Custom Report", content)
+                        pdf_data = create_enhanced_pdf_report(content, "Custom Report")
                         if pdf_data:
+                            # Generate specific filename
+                            topic_words = custom_prompt.split()[:3]  # First 3 words
+                            topic_name = '_'.join(word.lower().strip('.,!?') for word in topic_words)
+                            user_id = st.session_state.get('user_id', 'user')
+                            timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+                            filename = f"{topic_name}_{user_id}_{timestamp}.pdf"
+                            
                             st.download_button(
-                                "Download PDF", pdf_data,
-                                f"report_{datetime.now().strftime('%m%d')}.pdf",
-                                "application/pdf"
+                                "Download PDF", pdf_data, filename, "application/pdf"
                             )
                     except Exception as e:
                         st.error(f"Error: {str(e)}")
@@ -770,10 +778,29 @@ for i, tab in enumerate(tabs):
                             if st.button("📄 PDF", key=f"pdf_{tab_id}_{len(st.session_state.tab_messages[tab_id])}", help="Generate PDF"):
                                 try:
                                     from document_generator import create_custom_report_pdf
-                                    pdf_data = create_custom_report_pdf(doc_title, personalized_content)
+                                    pdf_data = create_enhanced_pdf_report(personalized_content, doc_title)
                                     if pdf_data:
+                                        # Generate specific filename from conversation context
+                                        user_id = st.session_state.get('user_id', 'user')
+                                        timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+                                        
+                                        # Extract topic from recent messages
+                                        recent_msgs = st.session_state.tab_messages[tab_id][-3:]
+                                        topic_words = []
+                                        for msg in recent_msgs:
+                                            if msg['role'] == 'user':
+                                                words = msg['content'].split()[:2]
+                                                topic_words.extend(words)
+                                        
+                                        if topic_words:
+                                            topic_name = '_'.join(word.lower().strip('.,!?') for word in topic_words[:3])
+                                        else:
+                                            topic_name = doc_title.lower().replace(' ', '_')
+                                        
+                                        filename = f"{topic_name}_{user_id}_{timestamp}.pdf"
+                                        
                                         st.download_button(
-                                            "⬇️", pdf_data, f"{doc_title}.pdf", "application/pdf",
+                                            "⬇️", pdf_data, filename, "application/pdf",
                                             key=f"dl_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"
                                         )
                                 except Exception as e:
