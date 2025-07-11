@@ -2,6 +2,7 @@ import streamlit as st
 import os
 from strands import Agent
 from strands_tools import file_read, file_write, editor, use_llm, memory, mem0_memory
+from auto_learning_system import initialize_auto_learning, trigger_manual_learning
 from english_assistant import english_assistant
 from language_assistant import language_assistant
 from math_assistant import math_assistant
@@ -219,6 +220,12 @@ def run_memory_agent(query, datetime_context):
 
 st.title("🔒 Son of Anton")
 
+# Initialize auto-learning system
+if 'learning_initialized' not in st.session_state:
+    learning_status = initialize_auto_learning()
+    st.session_state.learning_initialized = True
+    st.success("🧠 Auto-learning system active")
+
 # Get user's timezone and geolocation from browser JavaScript
 if 'user_timezone' not in st.session_state or 'user_location' not in st.session_state:
     st.components.v1.html("""
@@ -350,6 +357,10 @@ with st.sidebar:
     
     st.divider()
     st.caption(f"Active Assistants: {sum([use_math, use_english, use_language, use_cs, use_financial, use_aws, use_business_dev, use_lafayette_economic, use_research, use_louisiana_legal, use_web_browser, use_general, use_psychology, use_cryptography, use_blockchain, use_cryptocurrency, use_tokenomics, use_economics, use_cybersec_offense, use_cybersec_defense, use_web3, use_entrepreneurship, use_formula1, use_ai, use_microchip, use_opensource, use_nuclear, use_louisiana_vc, use_data_acquisition, use_data_analysis, use_automotive, use_business_contact, use_public_records, use_professional_networking, use_company_intelligence, use_geopolitical, use_international_finance, use_predictive_analysis])}")
+    
+    if st.button("🧠 Test Learning"):
+        result = trigger_manual_learning("financial_assistant")
+        st.info(result)
     
     if st.button("🛑 Stop Session", type="primary"):
         st.stop()
