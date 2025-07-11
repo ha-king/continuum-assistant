@@ -379,146 +379,119 @@ with st.sidebar:
         use_predictive_analysis = True
     
     st.divider()
-    st.caption(f"Active Assistants: {sum([use_math, use_english, use_language, use_cs, use_financial, use_aws, use_business_dev, use_lafayette_economic, use_research, use_louisiana_legal, use_web_browser, use_general, use_psychology, use_cryptography, use_blockchain, use_cryptocurrency, use_tokenomics, use_economics, use_cybersec_offense, use_cybersec_defense, use_web3, use_entrepreneurship, use_formula1, use_ai, use_microchip, use_opensource, use_nuclear, use_louisiana_vc, use_data_acquisition, use_data_analysis, use_automotive, use_business_contact, use_public_records, use_professional_networking, use_company_intelligence, use_geopolitical, use_international_finance, use_predictive_analysis])}")
+    active_count = sum([use_math, use_english, use_language, use_cs, use_financial, use_aws, use_business_dev, use_lafayette_economic, use_research, use_louisiana_legal, use_web_browser, use_general, use_psychology, use_cryptography, use_blockchain, use_cryptocurrency, use_tokenomics, use_economics, use_cybersec_offense, use_cybersec_defense, use_web3, use_entrepreneurship, use_formula1, use_ai, use_microchip, use_opensource, use_nuclear, use_louisiana_vc, use_data_acquisition, use_data_analysis, use_automotive, use_business_contact, use_public_records, use_professional_networking, use_company_intelligence, use_geopolitical, use_international_finance, use_predictive_analysis])
+    st.caption(f"🤖 {active_count} Assistants | 🧠 Enhanced AI | 📊 Real-time Data")
     
-    with st.expander("📊 Advanced Intelligence Dashboard", expanded=False):
-        tab1, tab2, tab3, tab4 = st.tabs(["🧠 AI Systems", "📊 Real-Time Data", "🌍 Global Intel", "🔗 Knowledge Graph"])
+    # Advanced Intelligence (compact)
+    with st.expander("🧠 Advanced Intelligence", expanded=False):
+        adv_col1, adv_col2, adv_col3 = st.columns(3)
         
-        with tab1:
-            col1, col2 = st.columns(2)
-            with col1:
-                if st.button("🧠 Enhanced Learning"):
-                    result = trigger_enhanced_learning("cryptocurrency_assistant")
-                    st.success(result)
-                if st.button("🚨 View Alerts"):
-                    alerts = get_proactive_alerts()
-                    if alerts:
-                        for alert in alerts[-2:]:
-                            st.warning(f"{alert['type']}: {alert['message'][:80]}...")
-                    else:
-                        st.info("No recent alerts")
-            with col2:
-                if st.button("📝 Intelligence Brief"):
-                    brief = get_intelligence_brief()
-                    st.text_area("Brief", brief[:300] + "..." if len(brief) > 300 else brief, height=100)
-        
-        with tab2:
-            if st.button("💰 Crypto Prices"):
-                try:
-                    crypto_data = asyncio.run(get_crypto_market_data(['bitcoin', 'ethereum', 'apecoin']))
-                    st.markdown(crypto_data)
-                except:
-                    st.info("Crypto data temporarily unavailable")
+        with adv_col1:
+            if st.button("🧠 Learning", help="Trigger enhanced learning"):
+                result = trigger_enhanced_learning("cryptocurrency_assistant")
+                st.success("Learning triggered")
             
-            if st.button("📊 Market Status"):
-                market_status = get_global_market_status()
-                st.markdown(market_status)
+            if st.button("📝 Brief", help="Intelligence brief"):
+                brief = get_intelligence_brief()
+                st.info(brief[:100] + "...")
         
-        with tab3:
+        with adv_col2:
             user_tz = st.session_state.get('user_timezone', 'UTC')
-            if st.button("⏰ Timezone Intel"):
+            if st.button("⏰ Timezone", help="Timezone intelligence"):
                 tz_intel = get_timezone_intelligence(user_tz)
-                st.markdown(tz_intel)
+                st.info(tz_intel[:100] + "...")
             
-            region = st.selectbox("Cultural Context:", ['US', 'UK', 'JP', 'DE', 'CN'], key="region_select")
-            if st.button("🌏 Cultural Adaptation"):
+            region = st.selectbox("Region:", ['US', 'UK', 'JP', 'DE', 'CN'], key="region_sel")
+            if st.button("🌏 Culture", help="Cultural adaptation"):
                 cultural_info = get_cultural_adaptation(region)
-                st.markdown(cultural_info)
+                st.info(cultural_info[:100] + "...")
         
-        with tab4:
-            if st.button("📊 Knowledge Patterns"):
+        with adv_col3:
+            if st.button("📊 Patterns", help="Knowledge patterns"):
                 patterns = analyze_knowledge_patterns()
-                st.markdown(patterns)
+                st.info(patterns[:100] + "...")
             
-            entity1 = st.text_input("Entity 1:", placeholder="e.g., Bitcoin")
-            entity2 = st.text_input("Entity 2:", placeholder="e.g., Ethereum")
-            if st.button("🔗 Find Connections") and entity1 and entity2:
+            entity1 = st.text_input("Entity 1:", placeholder="Bitcoin", key="ent1")
+            entity2 = st.text_input("Entity 2:", placeholder="Ethereum", key="ent2")
+            if st.button("🔗 Connect") and entity1 and entity2:
                 connections = find_entity_connections(entity1, entity2)
-                st.markdown(connections)
+                st.info(connections[:100] + "...")
 
 
-st.write("🔐 **Authenticated Access** - Ask a question in any subject area, and I'll route it to the appropriate specialist.")
+st.info("🔐 **AI-Powered Business Intelligence Platform** - Ask questions, generate reports, create business plans, and access real-time market data.")
 
-# Add multimodal interface
-with st.expander("📎 Multi-Modal Processing", expanded=False):
-    create_multimodal_interface()
-
-# Add business plan generator
-with st.expander("🚀 Business Plan Generator", expanded=False):
-    create_business_plan_interface()
-
-# Add document generation interface
-with st.expander("📝 Document Generation", expanded=False):
-    st.subheader("📄 Generate Professional Reports")
+# Quick Intelligence Panel
+with st.container():
+    intel_col1, intel_col2, intel_col3 = st.columns(3)
     
-    col1, col2 = st.columns(2)
+    with intel_col1:
+        if st.button("💰 Live Crypto", help="Real-time crypto prices"):
+            try:
+                crypto_data = asyncio.run(get_crypto_market_data(['bitcoin', 'ethereum', 'apecoin']))
+                st.success(crypto_data[:150] + "...")
+            except:
+                st.warning("Data unavailable")
     
-    with col1:
-        st.write("**Crypto Market Analysis Reports:**")
-        timeframe = st.selectbox("Forecast Timeframe:", ["24-hours", "48-hours", "72-hours", "1-week"])
-        
-        if st.button("📊 Generate PDF Report"):
-            with st.spinner("Generating comprehensive PDF report..."):
-                try:
-                    pdf_data, content = asyncio.run(generate_crypto_report_pdf(timeframe))
-                    if pdf_data:
-                        st.download_button(
-                            label="📎 Download PDF Report",
-                            data=pdf_data,
-                            file_name=f"crypto_analysis_{timeframe}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                            mime="application/pdf"
-                        )
-                        st.success("PDF report generated successfully!")
-                    else:
-                        st.error("PDF generation failed")
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
-        
-        if st.button("📊 Generate PowerPoint"):
-            with st.spinner("Creating PowerPoint presentation..."):
-                try:
-                    pptx_data, content = asyncio.run(generate_crypto_report_pptx(timeframe))
-                    if pptx_data:
-                        st.download_button(
-                            label="📎 Download PowerPoint",
-                            data=pptx_data,
-                            file_name=f"crypto_analysis_{timeframe}_{datetime.now().strftime('%Y%m%d_%H%M')}.pptx",
-                            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                        )
-                        st.success("PowerPoint presentation generated successfully!")
-                    else:
-                        st.error("PowerPoint generation failed")
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
+    with intel_col2:
+        if st.button("🌍 Markets", help="Global market status"):
+            market_status = get_global_market_status()
+            st.info(market_status[:150] + "...")
     
-    with col2:
-        st.write("**Custom Report Generation:**")
-        custom_title = st.text_input("Report Title:", value="Market Analysis Report")
-        custom_prompt = st.text_area("Analysis Request:", 
-                                   value="Provide a comprehensive analysis of current market conditions and outlook",
-                                   height=100)
+    with intel_col3:
+        if st.button("🚨 Alerts", help="Intelligence alerts"):
+            alerts = get_proactive_alerts()
+            if alerts:
+                st.warning(f"{alerts[-1]['message'][:80]}...")
+            else:
+                st.success("All clear")
+
+st.divider()
+
+# Consolidated Professional Tools
+with st.expander("📄 Professional Tools Suite", expanded=False):
+    tool_tab1, tool_tab2, tool_tab3 = st.tabs(["🚀 Business Plans", "📊 Reports", "📎 Media"])
+    
+    with tool_tab1:
+        create_business_plan_interface()
+    
+    with tool_tab2:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.write("**Crypto Analysis:**")
+            timeframe = st.selectbox("Timeframe:", ["24h", "48h", "72h", "1w"], key="crypto_tf")
+            if st.button("📊 Generate Crypto Report"):
+                with st.spinner("Generating..."):
+                    try:
+                        pdf_data, _ = asyncio.run(generate_crypto_report_pdf(timeframe))
+                        if pdf_data:
+                            st.download_button(
+                                "Download PDF", pdf_data,
+                                f"crypto_{timeframe}_{datetime.now().strftime('%m%d')}.pdf",
+                                "application/pdf"
+                            )
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
         
-        if st.button("📝 Generate Custom PDF") and custom_prompt:
-            with st.spinner("Generating custom report..."):
-                try:
-                    # Generate content using AI
-                    teacher_agent = create_teacher_agent_with_datetime()
-                    response = teacher_agent(f"Create a professional report: {custom_prompt}")
-                    content = str(response)
-                    
-                    pdf_data = create_custom_report_pdf(custom_title, content)
-                    if pdf_data:
-                        st.download_button(
-                            label="📎 Download Custom PDF",
-                            data=pdf_data,
-                            file_name=f"custom_report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                            mime="application/pdf"
-                        )
-                        st.success("Custom PDF generated!")
-                    else:
-                        st.error("PDF generation failed")
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
+        with col2:
+            st.write("**Custom Reports:**")
+            custom_prompt = st.text_area("Report Topic:", height=60, placeholder="Market analysis, business strategy, etc.")
+            if st.button("📝 Generate Report") and custom_prompt:
+                with st.spinner("Creating..."):
+                    try:
+                        teacher_agent = create_teacher_agent_with_datetime()
+                        content = str(teacher_agent(f"Professional report: {custom_prompt}"))
+                        pdf_data = create_custom_report_pdf("Custom Report", content)
+                        if pdf_data:
+                            st.download_button(
+                                "Download PDF", pdf_data,
+                                f"report_{datetime.now().strftime('%m%d')}.pdf",
+                                "application/pdf"
+                            )
+                    except Exception as e:
+                        st.error(f"Error: {str(e)}")
+    
+    with tool_tab3:
+        create_multimodal_interface()
 
 teacher_tools = []
 if use_math:
@@ -744,49 +717,25 @@ for i, tab in enumerate(tabs):
                     # Display personalized content
                     st.markdown(personalized_content)
                     
-                    # Add document generation option for substantial responses
+                    # Compact document generation for substantial responses
                     if len(personalized_content) > 200:
-                        with st.expander("📝 Generate Document from Response", expanded=False):
-                            col1, col2, col3 = st.columns(3)
-                            
-                            with col1:
-                                doc_title = st.text_input("Document Title:", value=f"Analysis Report - {datetime.now().strftime('%Y-%m-%d')}", key=f"doc_title_{tab_id}_{len(st.session_state.tab_messages[tab_id])}")
-                            
-                            with col2:
-                                if st.button("📎 Generate PDF", key=f"pdf_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"):
-                                    try:
-                                        from document_generator import create_custom_report_pdf
-                                        pdf_data = create_custom_report_pdf(doc_title, personalized_content)
-                                        if pdf_data:
-                                            st.download_button(
-                                                label="📎 Download PDF",
-                                                data=pdf_data,
-                                                file_name=f"{doc_title.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
-                                                mime="application/pdf",
-                                                key=f"pdf_dl_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"
-                                            )
-                                        else:
-                                            st.error("PDF generation failed")
-                                    except Exception as e:
-                                        st.error(f"Error: {str(e)}")
-                            
-                            with col3:
-                                if st.button("📊 Generate PowerPoint", key=f"ppt_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"):
-                                    try:
-                                        from document_generator import create_custom_report_pptx
-                                        pptx_data = create_custom_report_pptx(doc_title, personalized_content)
-                                        if pptx_data:
-                                            st.download_button(
-                                                label="📎 Download PPTX",
-                                                data=pptx_data,
-                                                file_name=f"{doc_title.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M')}.pptx",
-                                                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                                                key=f"ppt_dl_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"
-                                            )
-                                        else:
-                                            st.error("PowerPoint generation failed")
-                                    except Exception as e:
-                                        st.error(f"Error: {str(e)}")
+                        doc_col1, doc_col2 = st.columns([3, 1])
+                        with doc_col1:
+                            doc_title = st.text_input("📄", value=f"Report_{datetime.now().strftime('%m%d')}", 
+                                                    placeholder="Document title", 
+                                                    key=f"doc_{tab_id}_{len(st.session_state.tab_messages[tab_id])}")
+                        with doc_col2:
+                            if st.button("📄 PDF", key=f"pdf_{tab_id}_{len(st.session_state.tab_messages[tab_id])}", help="Generate PDF"):
+                                try:
+                                    from document_generator import create_custom_report_pdf
+                                    pdf_data = create_custom_report_pdf(doc_title, personalized_content)
+                                    if pdf_data:
+                                        st.download_button(
+                                            "⬇️", pdf_data, f"{doc_title}.pdf", "application/pdf",
+                                            key=f"dl_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"
+                                        )
+                                except Exception as e:
+                                    st.error(f"Error: {str(e)}")
                     
                     # Add expandable reference section if references exist
                     if "**References Used:**" in content:
@@ -799,20 +748,14 @@ for i, tab in enumerate(tabs):
                     
                     st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": personalized_content})
                     
-                    # Show user insights and predictions in sidebar
-                    if user_id != 'anonymous':
+                    # Compact user insights in sidebar
+                    if user_id != 'anonymous' and len(st.session_state.tab_messages[tab_id]) > 3:
                         with st.sidebar:
-                            with st.expander("👤 User Intelligence", expanded=False):
+                            with st.expander("👤 Insights", expanded=False):
                                 insights = get_user_insights(user_id)
-                                st.json(insights)
-                                
-                                # Predictive suggestions
-                                try:
-                                    user_history = [msg['content'] for msg in st.session_state.tab_messages[tab_id][-5:] if msg['role'] == 'user']
-                                    predictions = predict_user_needs(user_history, prompt)
-                                    st.markdown(predictions)
-                                except:
-                                    pass
+                                st.caption(f"Level: {insights.get('expertise_level', 'N/A')} | Queries: {insights.get('interaction_count', 0)}")
+                                if insights.get('primary_interest') != 'general':
+                                    st.caption(f"Focus: {insights.get('primary_interest', 'N/A')}")
                     
                 except Exception as e:
                     error_msg = f"An error occurred: {str(e)}"
