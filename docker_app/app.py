@@ -76,17 +76,25 @@ def get_current_datetime():
     from datetime import datetime
     import pytz
     
+    # Force current actual datetime
+    current_time = datetime.now()
+    
     user_tz = st.session_state.get('user_timezone', 'UTC')
     try:
         tz = pytz.timezone(user_tz)
-        user_time = datetime.now(tz)
+        user_time = current_time.astimezone(tz)
         return user_time.strftime("%A, %B %d, %Y at %I:%M %p %Z")
     except:
-        return datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
+        return current_time.strftime("%A, %B %d, %Y at %I:%M %p UTC")
 
 def get_user_context():
     """Get user context including location and timezone"""
-    context = f"Current date and time: {get_current_datetime()}\n"
+    from datetime import datetime
+    
+    # Ensure we always use actual current time
+    actual_current_time = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
+    context = f"IMPORTANT: Current actual date and time is {actual_current_time}\n"
+    context += f"User's local time: {get_current_datetime()}\n"
     
     location = st.session_state.get('user_location')
     if location:
@@ -544,6 +552,9 @@ for i, tab in enumerate(tabs):
                         time_keywords = ['what time', 'what day', 'current time', 'current date', 'time is it', 'day is it']
                         if any(keyword in prompt.lower() for keyword in time_keywords):
                             content = f"It is {get_current_datetime()}"
+                        # Handle crypto price queries - route to cryptocurrency assistant
+                        elif any(word in prompt.lower() for word in ['crypto', 'bitcoin', 'ethereum', 'apecoin', 'price', 'coinbase']):
+                            content = cryptocurrency_assistant(f"{datetime_context}{prompt}")
                         elif any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit', 'current', 'today', 'now', 'latest', 'real-time']):
                             try:
                                 # Try web browser first, fallback to research assistant
