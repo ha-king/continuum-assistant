@@ -15,3 +15,5 @@ aiohttp
 networkx
 matplotlib
 Pillow
+reportlab
+python-pptx

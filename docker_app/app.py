@@ -11,6 +11,7 @@ from real_time_data_feeds import get_crypto_market_data, get_stock_market_data, 
 from global_intelligence_system import get_global_market_status, get_timezone_intelligence, get_cultural_adaptation, predict_user_needs
 from multimodal_processor import create_multimodal_interface, process_uploaded_image, analyze_financial_chart
 from knowledge_graph_system import process_text_for_knowledge_graph, find_entity_connections, get_entity_network, analyze_knowledge_patterns, get_related_suggestions
+from document_generator import generate_crypto_report_pdf, generate_crypto_report_pptx, create_custom_report_pdf, create_custom_report_pptx
 import asyncio
 from english_assistant import english_assistant
 from language_assistant import language_assistant
@@ -439,6 +440,78 @@ st.write("🔐 **Authenticated Access** - Ask a question in any subject area, an
 # Add multimodal interface
 with st.expander("📎 Multi-Modal Processing", expanded=False):
     create_multimodal_interface()
+
+# Add document generation interface
+with st.expander("📝 Document Generation", expanded=False):
+    st.subheader("📄 Generate Professional Reports")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Crypto Market Analysis Reports:**")
+        timeframe = st.selectbox("Forecast Timeframe:", ["24-hours", "48-hours", "72-hours", "1-week"])
+        
+        if st.button("📊 Generate PDF Report"):
+            with st.spinner("Generating comprehensive PDF report..."):
+                try:
+                    pdf_data, content = asyncio.run(generate_crypto_report_pdf(timeframe))
+                    if pdf_data:
+                        st.download_button(
+                            label="📎 Download PDF Report",
+                            data=pdf_data,
+                            file_name=f"crypto_analysis_{timeframe}_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                            mime="application/pdf"
+                        )
+                        st.success("PDF report generated successfully!")
+                    else:
+                        st.error("PDF generation failed")
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+        
+        if st.button("📊 Generate PowerPoint"):
+            with st.spinner("Creating PowerPoint presentation..."):
+                try:
+                    pptx_data, content = asyncio.run(generate_crypto_report_pptx(timeframe))
+                    if pptx_data:
+                        st.download_button(
+                            label="📎 Download PowerPoint",
+                            data=pptx_data,
+                            file_name=f"crypto_analysis_{timeframe}_{datetime.now().strftime('%Y%m%d_%H%M')}.pptx",
+                            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                        )
+                        st.success("PowerPoint presentation generated successfully!")
+                    else:
+                        st.error("PowerPoint generation failed")
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
+    
+    with col2:
+        st.write("**Custom Report Generation:**")
+        custom_title = st.text_input("Report Title:", value="Market Analysis Report")
+        custom_prompt = st.text_area("Analysis Request:", 
+                                   value="Provide a comprehensive analysis of current market conditions and outlook",
+                                   height=100)
+        
+        if st.button("📝 Generate Custom PDF") and custom_prompt:
+            with st.spinner("Generating custom report..."):
+                try:
+                    # Generate content using AI
+                    response = teacher_agent(f"Create a professional report: {custom_prompt}")
+                    content = str(response)
+                    
+                    pdf_data = create_custom_report_pdf(custom_title, content)
+                    if pdf_data:
+                        st.download_button(
+                            label="📎 Download Custom PDF",
+                            data=pdf_data,
+                            file_name=f"custom_report_{datetime.now().strftime('%Y%m%d_%H%M')}.pdf",
+                            mime="application/pdf"
+                        )
+                        st.success("Custom PDF generated!")
+                    else:
+                        st.error("PDF generation failed")
+                except Exception as e:
+                    st.error(f"Error: {str(e)}")
 
 teacher_tools = []
 if use_math:
