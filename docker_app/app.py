@@ -478,8 +478,12 @@ with st.expander("📄 Professional Tools Suite", expanded=False):
             if st.button("📝 Generate Report") and custom_prompt:
                 with st.spinner("Creating..."):
                     try:
-                        teacher_agent = create_teacher_agent_with_datetime()
-                        content = str(teacher_agent(f"Professional report: {custom_prompt}"))
+                        from strands import Agent
+                        from datetime import datetime
+                        
+                        # Create simple agent for report generation
+                        agent = Agent()
+                        content = str(agent(f"Create a professional report on: {custom_prompt}. Current date: {datetime.now().strftime('%Y-%m-%d')}"))
                         pdf_data = create_custom_report_pdf("Custom Report", content)
                         if pdf_data:
                             st.download_button(
