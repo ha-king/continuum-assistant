@@ -6,6 +6,12 @@ from auto_learning_system import initialize_auto_learning, trigger_manual_learni
 from enhanced_learning_system import initialize_enhanced_learning, trigger_enhanced_learning
 from personalized_intelligence import get_personalized_response, get_user_insights
 from proactive_intelligence import initialize_proactive_intelligence, get_proactive_alerts, get_intelligence_brief, trigger_market_analysis
+from ensemble_ai_system import get_ensemble_response, get_fine_tuned_response
+from real_time_data_feeds import get_crypto_market_data, get_stock_market_data, get_market_sentiment, get_economic_data
+from global_intelligence_system import get_global_market_status, get_timezone_intelligence, get_cultural_adaptation, predict_user_needs
+from multimodal_processor import create_multimodal_interface, process_uploaded_image, analyze_financial_chart
+from knowledge_graph_system import process_text_for_knowledge_graph, find_entity_connections, get_entity_network, analyze_knowledge_patterns, get_related_suggestions
+import asyncio
 from english_assistant import english_assistant
 from language_assistant import language_assistant
 from math_assistant import math_assistant
@@ -372,33 +378,67 @@ with st.sidebar:
     st.divider()
     st.caption(f"Active Assistants: {sum([use_math, use_english, use_language, use_cs, use_financial, use_aws, use_business_dev, use_lafayette_economic, use_research, use_louisiana_legal, use_web_browser, use_general, use_psychology, use_cryptography, use_blockchain, use_cryptocurrency, use_tokenomics, use_economics, use_cybersec_offense, use_cybersec_defense, use_web3, use_entrepreneurship, use_formula1, use_ai, use_microchip, use_opensource, use_nuclear, use_louisiana_vc, use_data_acquisition, use_data_analysis, use_automotive, use_business_contact, use_public_records, use_professional_networking, use_company_intelligence, use_geopolitical, use_international_finance, use_predictive_analysis])}")
     
-    with st.expander("📊 Intelligence Dashboard", expanded=False):
-        col1, col2 = st.columns(2)
+    with st.expander("📊 Advanced Intelligence Dashboard", expanded=False):
+        tab1, tab2, tab3, tab4 = st.tabs(["🧠 AI Systems", "📊 Real-Time Data", "🌍 Global Intel", "🔗 Knowledge Graph"])
         
-        with col1:
-            if st.button("🧠 Test Enhanced Learning"):
-                result = trigger_enhanced_learning("cryptocurrency_assistant")
-                st.success(result)
-            
-            if st.button("📊 Market Analysis"):
-                analysis = trigger_market_analysis()
-                st.info(analysis[:300] + "..." if len(analysis) > 300 else analysis)
+        with tab1:
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("🧠 Enhanced Learning"):
+                    result = trigger_enhanced_learning("cryptocurrency_assistant")
+                    st.success(result)
+                if st.button("🚨 View Alerts"):
+                    alerts = get_proactive_alerts()
+                    if alerts:
+                        for alert in alerts[-2:]:
+                            st.warning(f"{alert['type']}: {alert['message'][:80]}...")
+                    else:
+                        st.info("No recent alerts")
+            with col2:
+                if st.button("📝 Intelligence Brief"):
+                    brief = get_intelligence_brief()
+                    st.text_area("Brief", brief[:300] + "..." if len(brief) > 300 else brief, height=100)
         
-        with col2:
-            if st.button("🚨 View Alerts"):
-                alerts = get_proactive_alerts()
-                if alerts:
-                    for alert in alerts[-3:]:
-                        st.warning(f"{alert['type']}: {alert['message'][:100]}...")
-                else:
-                    st.info("No recent alerts")
+        with tab2:
+            if st.button("💰 Crypto Prices"):
+                try:
+                    crypto_data = asyncio.run(get_crypto_market_data(['bitcoin', 'ethereum', 'apecoin']))
+                    st.markdown(crypto_data)
+                except:
+                    st.info("Crypto data temporarily unavailable")
             
-            if st.button("📝 Intelligence Brief"):
-                brief = get_intelligence_brief()
-                st.text_area("Daily Brief", brief[:500] + "..." if len(brief) > 500 else brief, height=150)
+            if st.button("📊 Market Status"):
+                market_status = get_global_market_status()
+                st.markdown(market_status)
+        
+        with tab3:
+            user_tz = st.session_state.get('user_timezone', 'UTC')
+            if st.button("⏰ Timezone Intel"):
+                tz_intel = get_timezone_intelligence(user_tz)
+                st.markdown(tz_intel)
+            
+            region = st.selectbox("Cultural Context:", ['US', 'UK', 'JP', 'DE', 'CN'], key="region_select")
+            if st.button("🌏 Cultural Adaptation"):
+                cultural_info = get_cultural_adaptation(region)
+                st.markdown(cultural_info)
+        
+        with tab4:
+            if st.button("📊 Knowledge Patterns"):
+                patterns = analyze_knowledge_patterns()
+                st.markdown(patterns)
+            
+            entity1 = st.text_input("Entity 1:", placeholder="e.g., Bitcoin")
+            entity2 = st.text_input("Entity 2:", placeholder="e.g., Ethereum")
+            if st.button("🔗 Find Connections") and entity1 and entity2:
+                connections = find_entity_connections(entity1, entity2)
+                st.markdown(connections)
 
 
 st.write("🔐 **Authenticated Access** - Ask a question in any subject area, and I'll route it to the appropriate specialist.")
+
+# Add multimodal interface
+with st.expander("📎 Multi-Modal Processing", expanded=False):
+    create_multimodal_interface()
 
 teacher_tools = []
 if use_math:
@@ -595,8 +635,31 @@ for i, tab in enumerate(tabs):
                     # Get user ID for personalization
                     user_id = st.session_state.get('user_id', 'anonymous')
                     
+                    # Process for knowledge graph
+                    try:
+                        kg_result = process_text_for_knowledge_graph(f"{prompt} {content}")
+                        print(f"Knowledge graph: {kg_result}")
+                    except:
+                        pass
+                    
+                    # Apply ensemble AI if enabled
+                    try:
+                        if len(content) > 100:  # Only for substantial responses
+                            enhanced_content = get_fine_tuned_response(prompt, content)
+                            content = enhanced_content
+                    except:
+                        pass
+                    
                     # Apply personalization
                     personalized_content = get_personalized_response(user_id, prompt, content)
+                    
+                    # Add related suggestions
+                    try:
+                        suggestions = get_related_suggestions(prompt)
+                        if "Related Query Suggestions" in suggestions:
+                            personalized_content += f"\n\n{suggestions}"
+                    except:
+                        pass
                     
                     # Display personalized content
                     st.markdown(personalized_content)
@@ -612,12 +675,20 @@ for i, tab in enumerate(tabs):
                     
                     st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": personalized_content})
                     
-                    # Show user insights in sidebar
+                    # Show user insights and predictions in sidebar
                     if user_id != 'anonymous':
                         with st.sidebar:
-                            with st.expander("👤 User Insights", expanded=False):
+                            with st.expander("👤 User Intelligence", expanded=False):
                                 insights = get_user_insights(user_id)
                                 st.json(insights)
+                                
+                                # Predictive suggestions
+                                try:
+                                    user_history = [msg['content'] for msg in st.session_state.tab_messages[tab_id][-5:] if msg['role'] == 'user']
+                                    predictions = predict_user_needs(user_history, prompt)
+                                    st.markdown(predictions)
+                                except:
+                                    pass
                     
                 except Exception as e:
                     error_msg = f"An error occurred: {str(e)}"

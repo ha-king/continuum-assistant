@@ -10,3 +10,8 @@ streamlit
 streamlit-cognito-auth
 pytz
 schedule
+requests
+aiohttp
+networkx
+matplotlib
+Pillow
