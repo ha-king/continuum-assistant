@@ -388,9 +388,7 @@ with st.sidebar:
             if st.button("📝 Intelligence Brief"):
                 brief = get_intelligence_brief()
                 st.text_area("Daily Brief", brief[:500] + "..." if len(brief) > 500 else brief, height=150)
-    
-    if st.button("🛑 Stop Session", type="primary"):
-        st.stop()
+
 
 st.write("🔐 **Authenticated Access** - Ask a question in any subject area, and I'll route it to the appropriate specialist.")
 
