@@ -714,7 +714,7 @@ for i, tab in enumerate(tabs):
                         else:
                             # Recreate teacher agent with fresh datetime for each request
                             teacher_agent = create_teacher_agent_with_datetime()
-                            response = safe_execute_function(teacher_agent, full_prompt)
+                            response = teacher_agent(full_prompt)
                             content = str(response)
                             
                             # Store knowledge from response
