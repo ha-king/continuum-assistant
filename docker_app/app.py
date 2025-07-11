@@ -502,6 +502,7 @@ with st.expander("📝 Document Generation", expanded=False):
             with st.spinner("Generating custom report..."):
                 try:
                     # Generate content using AI
+                    teacher_agent = create_teacher_agent_with_datetime()
                     response = teacher_agent(f"Create a professional report: {custom_prompt}")
                     content = str(response)
                     
