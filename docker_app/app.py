@@ -14,6 +14,7 @@ from knowledge_graph_system import process_text_for_knowledge_graph, find_entity
 from document_generator import generate_crypto_report_pdf, generate_crypto_report_pptx, create_custom_report_pdf, create_custom_report_pptx
 from business_plan_generator import create_business_plan_interface
 import asyncio
+from datetime import datetime
 from english_assistant import english_assistant
 from language_assistant import language_assistant
 from math_assistant import math_assistant
