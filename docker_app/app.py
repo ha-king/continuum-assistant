@@ -12,6 +12,7 @@ from global_intelligence_system import get_global_market_status, get_timezone_in
 from multimodal_processor import create_multimodal_interface, process_uploaded_image, analyze_financial_chart
 from knowledge_graph_system import process_text_for_knowledge_graph, find_entity_connections, get_entity_network, analyze_knowledge_patterns, get_related_suggestions
 from document_generator import generate_crypto_report_pdf, generate_crypto_report_pptx, create_custom_report_pdf, create_custom_report_pptx
+from business_plan_generator import create_business_plan_interface
 import asyncio
 from english_assistant import english_assistant
 from language_assistant import language_assistant
@@ -440,6 +441,10 @@ st.write("🔐 **Authenticated Access** - Ask a question in any subject area, an
 # Add multimodal interface
 with st.expander("📎 Multi-Modal Processing", expanded=False):
     create_multimodal_interface()
+
+# Add business plan generator
+with st.expander("🚀 Business Plan Generator", expanded=False):
+    create_business_plan_interface()
 
 # Add document generation interface
 with st.expander("📝 Document Generation", expanded=False):
