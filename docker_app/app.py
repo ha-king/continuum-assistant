@@ -3,6 +3,9 @@ import os
 from strands import Agent
 from strands_tools import file_read, file_write, editor, use_llm, memory, mem0_memory
 from auto_learning_system import initialize_auto_learning, trigger_manual_learning
+from enhanced_learning_system import initialize_enhanced_learning, trigger_enhanced_learning
+from personalized_intelligence import get_personalized_response, get_user_insights
+from proactive_intelligence import initialize_proactive_intelligence, get_proactive_alerts, get_intelligence_brief, trigger_market_analysis
 from english_assistant import english_assistant
 from language_assistant import language_assistant
 from math_assistant import math_assistant
@@ -220,11 +223,14 @@ def run_memory_agent(query, datetime_context):
 
 st.title("🔒 Son of Anton")
 
-# Initialize auto-learning system
-if 'learning_initialized' not in st.session_state:
-    learning_status = initialize_auto_learning()
-    st.session_state.learning_initialized = True
-    st.success("🧠 Auto-learning system active")
+# Initialize enhanced intelligence systems
+if 'intelligence_initialized' not in st.session_state:
+    auto_status = initialize_auto_learning()
+    enhanced_status = initialize_enhanced_learning()
+    proactive_status = initialize_proactive_intelligence()
+    st.session_state.intelligence_initialized = True
+    st.success("🤖 Advanced Intelligence Systems Active")
+    st.info("✨ Cross-domain synthesis, personalization, and proactive monitoring enabled")
 
 # Get user's timezone and geolocation from browser JavaScript
 if 'user_timezone' not in st.session_state or 'user_location' not in st.session_state:
@@ -358,9 +364,30 @@ with st.sidebar:
     st.divider()
     st.caption(f"Active Assistants: {sum([use_math, use_english, use_language, use_cs, use_financial, use_aws, use_business_dev, use_lafayette_economic, use_research, use_louisiana_legal, use_web_browser, use_general, use_psychology, use_cryptography, use_blockchain, use_cryptocurrency, use_tokenomics, use_economics, use_cybersec_offense, use_cybersec_defense, use_web3, use_entrepreneurship, use_formula1, use_ai, use_microchip, use_opensource, use_nuclear, use_louisiana_vc, use_data_acquisition, use_data_analysis, use_automotive, use_business_contact, use_public_records, use_professional_networking, use_company_intelligence, use_geopolitical, use_international_finance, use_predictive_analysis])}")
     
-    if st.button("🧠 Test Learning"):
-        result = trigger_manual_learning("financial_assistant")
-        st.info(result)
+    with st.expander("📊 Intelligence Dashboard", expanded=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("🧠 Test Enhanced Learning"):
+                result = trigger_enhanced_learning("cryptocurrency_assistant")
+                st.success(result)
+            
+            if st.button("📊 Market Analysis"):
+                analysis = trigger_market_analysis()
+                st.info(analysis[:300] + "..." if len(analysis) > 300 else analysis)
+        
+        with col2:
+            if st.button("🚨 View Alerts"):
+                alerts = get_proactive_alerts()
+                if alerts:
+                    for alert in alerts[-3:]:
+                        st.warning(f"{alert['type']}: {alert['message'][:100]}...")
+                else:
+                    st.info("No recent alerts")
+            
+            if st.button("📝 Intelligence Brief"):
+                brief = get_intelligence_brief()
+                st.text_area("Daily Brief", brief[:500] + "..." if len(brief) > 500 else brief, height=150)
     
     if st.button("🛑 Stop Session", type="primary"):
         st.stop()
@@ -556,8 +583,14 @@ for i, tab in enumerate(tabs):
                             else:
                                 content = kb_result
                     
-                    # Display main content
-                    st.markdown(content)
+                    # Get user ID for personalization
+                    user_id = st.session_state.get('user_id', 'anonymous')
+                    
+                    # Apply personalization
+                    personalized_content = get_personalized_response(user_id, prompt, content)
+                    
+                    # Display personalized content
+                    st.markdown(personalized_content)
                     
                     # Add expandable reference section if references exist
                     if "**References Used:**" in content:
@@ -568,7 +601,14 @@ for i, tab in enumerate(tabs):
                                 st.markdown(references)
                                 st.markdown(f"**Assistant Used:** {action.title()} Mode")
                     
-                    st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": content})
+                    st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": personalized_content})
+                    
+                    # Show user insights in sidebar
+                    if user_id != 'anonymous':
+                        with st.sidebar:
+                            with st.expander("👤 User Insights", expanded=False):
+                                insights = get_user_insights(user_id)
+                                st.json(insights)
                     
                 except Exception as e:
                     error_msg = f"An error occurred: {str(e)}"
