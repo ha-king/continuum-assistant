@@ -481,9 +481,47 @@ with st.expander("📄 Professional Tools Suite", expanded=False):
                         from strands import Agent
                         from datetime import datetime
                         
-                        # Create simple agent for report generation
+                        # Get real-time data based on topic
+                        context_data = ""
+                        prompt_lower = custom_prompt.lower()
+                        
+                        # Crypto data integration
+                        if any(word in prompt_lower for word in ['crypto', 'bitcoin', 'ethereum', 'apecoin', 'price', 'market']):
+                            try:
+                                crypto_data = asyncio.run(get_crypto_market_data(['bitcoin', 'ethereum', 'apecoin']))
+                                context_data += f"\n\nReal-time Crypto Data:\n{crypto_data}"
+                            except:
+                                context_data += "\n\nNote: Crypto data temporarily unavailable."
+                        
+                        # Market status integration
+                        if any(word in prompt_lower for word in ['market', 'trading', 'stock', 'finance', 'economic']):
+                            try:
+                                market_status = get_global_market_status()
+                                context_data += f"\n\nGlobal Market Status:\n{market_status}"
+                            except:
+                                context_data += "\n\nNote: Market status data temporarily unavailable."
+                        
+                        # Economic indicators
+                        if any(word in prompt_lower for word in ['economic', 'economy', 'indicators', 'inflation', 'gdp']):
+                            try:
+                                economic_data = asyncio.run(get_economic_data())
+                                context_data += f"\n\nEconomic Indicators:\n{economic_data}"
+                            except:
+                                context_data += "\n\nNote: Economic data temporarily unavailable."
+                        
+                        # Timezone intelligence for global topics
+                        if any(word in prompt_lower for word in ['global', 'international', 'worldwide', 'timezone']):
+                            try:
+                                user_tz = st.session_state.get('user_timezone', 'UTC')
+                                tz_intel = get_timezone_intelligence(user_tz)
+                                context_data += f"\n\nTimezone Intelligence:\n{tz_intel}"
+                            except:
+                                pass
+                        
+                        # Create agent for report generation
                         agent = Agent()
-                        content = str(agent(f"Create a professional report on: {custom_prompt}. Current date: {datetime.now().strftime('%Y-%m-%d')}"))
+                        full_prompt = f"Create a professional report on: {custom_prompt}. Current date: {datetime.now().strftime('%Y-%m-%d')}{context_data}"
+                        content = str(agent(full_prompt))
                         pdf_data = create_custom_report_pdf("Custom Report", content)
                         if pdf_data:
                             st.download_button(
