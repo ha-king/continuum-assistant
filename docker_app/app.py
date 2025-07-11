@@ -474,7 +474,7 @@ with st.expander("📄 Professional Tools Suite", expanded=False):
         
         with col2:
             st.write("**Custom Reports:**")
-            custom_prompt = st.text_area("Report Topic:", height=60, placeholder="Market analysis, business strategy, etc.")
+            custom_prompt = st.text_area("Report Topic:", height=68, placeholder="Market analysis, business strategy, etc.")
             if st.button("📝 Generate Report") and custom_prompt:
                 with st.spinner("Creating..."):
                     try:
