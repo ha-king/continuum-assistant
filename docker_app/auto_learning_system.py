@@ -14,7 +14,8 @@ class AutoLearningSystem:
             'aws_assistant': ['new AWS services', 'best practices', 'security updates'],
             'geopolitical_assistant': ['international relations', 'trade developments', 'diplomatic initiatives'],
             'international_finance_assistant': ['monetary policy', 'currency markets', 'banking regulations'],
-            'predictive_analysis_assistant': ['forecasting methods', 'ML advances', 'data science techniques']
+            'predictive_analysis_assistant': ['forecasting methods', 'ML advances', 'data science techniques'],
+            'cryptocurrency_assistant': ['crypto market trends', 'new blockchain protocols', 'DeFi developments', 'regulatory updates']
         }
         
     def daily_learning_session(self, assistant_name):
@@ -64,7 +65,7 @@ class AutoLearningSystem:
     
     def schedule_learning(self):
         """Schedule daily learning sessions"""
-        learning_times = ["06:00", "10:00", "14:00", "18:00", "22:00"]
+        learning_times = ["06:00", "09:00", "12:00", "15:00", "18:00", "21:00"]
         assistants = list(self.learning_topics.keys())
         
         for i, assistant in enumerate(assistants):
