@@ -2,7 +2,7 @@ import boto3
 import json
 from datetime import datetime, timedelta
 from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
@@ -72,80 +72,164 @@ class DocumentGenerator:
         except Exception as e:
             return f"Report generation error: {str(e)}"
     
-    def create_pdf_report(self, content, title="Crypto Market Analysis"):
-        """Generate PDF report from content"""
+    def create_pdf_report(self, content, title="Professional Report"):
+        """Generate modern professional PDF report"""
         try:
             buffer = io.BytesIO()
-            doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=0.5*inch)
+            doc = SimpleDocTemplate(
+                buffer, pagesize=A4, 
+                topMargin=0.8*inch, bottomMargin=0.8*inch,
+                leftMargin=0.8*inch, rightMargin=0.8*inch
+            )
             
-            # Styles
-            styles = getSampleStyleSheet()
+            # Modern color palette
+            primary_blue = colors.Color(0.1, 0.2, 0.4)  # Dark blue
+            accent_blue = colors.Color(0.2, 0.4, 0.7)   # Medium blue
+            light_gray = colors.Color(0.95, 0.95, 0.95) # Light gray
+            dark_gray = colors.Color(0.3, 0.3, 0.3)     # Dark gray
+            
+            # Modern professional styles
             title_style = ParagraphStyle(
-                'CustomTitle',
-                parent=styles['Heading1'],
-                fontSize=18,
+                'ModernTitle',
+                parent=getSampleStyleSheet()['Heading1'],
+                fontSize=24,
+                spaceAfter=20,
+                spaceBefore=20,
+                textColor=primary_blue,
+                alignment=0,  # Left alignment
+                fontName='Helvetica-Bold'
+            )
+            
+            subtitle_style = ParagraphStyle(
+                'ModernSubtitle',
+                parent=getSampleStyleSheet()['Normal'],
+                fontSize=12,
                 spaceAfter=30,
-                textColor=colors.darkblue,
-                alignment=1  # Center alignment
+                textColor=dark_gray,
+                alignment=0,
+                fontName='Helvetica'
             )
             
             heading_style = ParagraphStyle(
-                'CustomHeading',
-                parent=styles['Heading2'],
-                fontSize=14,
-                spaceAfter=12,
-                textColor=colors.darkblue,
-                leftIndent=0
+                'ModernHeading',
+                parent=getSampleStyleSheet()['Heading2'],
+                fontSize=16,
+                spaceAfter=15,
+                spaceBefore=20,
+                textColor=accent_blue,
+                fontName='Helvetica-Bold',
+                borderWidth=0,
+                borderColor=accent_blue,
+                borderPadding=5
             )
             
             body_style = ParagraphStyle(
-                'CustomBody',
-                parent=styles['Normal'],
+                'ModernBody',
+                parent=getSampleStyleSheet()['Normal'],
                 fontSize=11,
-                spaceAfter=8,
-                leftIndent=10
+                spaceAfter=12,
+                leading=16,
+                textColor=colors.black,
+                fontName='Helvetica',
+                alignment=4  # Justified
             )
             
-            # Build document
+            bullet_style = ParagraphStyle(
+                'ModernBullet',
+                parent=body_style,
+                leftIndent=20,
+                bulletIndent=10,
+                spaceAfter=8
+            )
+            
+            # Build modern document
             story = []
             
-            # Title
-            story.append(Paragraph(title, title_style))
-            story.append(Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p UTC')}", styles['Normal']))
-            story.append(Spacer(1, 20))
+            # Header section with modern styling
+            header_table = Table([
+                [Paragraph(title, title_style)],
+                [Paragraph(f"Generated: {datetime.now().strftime('%B %d, %Y at %I:%M %p UTC')}", subtitle_style)]
+            ], colWidths=[6*inch])
             
-            # Process content sections
+            header_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), light_gray),
+                ('PADDING', (0, 0), (-1, -1), 15),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('LINEBELOW', (0, 0), (-1, 0), 2, accent_blue)
+            ]))
+            
+            story.append(header_table)
+            story.append(Spacer(1, 30))
+            
+            # Process content with modern formatting
             lines = content.split('\n')
             current_section = ""
             
             for line in lines:
                 line = line.strip()
                 if not line:
+                    story.append(Spacer(1, 8))
                     continue
-                    
-                # Check if it's a heading (all caps or starts with specific keywords)
-                if (line.isupper() and len(line) > 5) or line.startswith(('EXECUTIVE', 'TECHNICAL', 'FUNDAMENTAL', 'FORECAST', 'OUTLOOK')):
+                
+                # Enhanced heading detection
+                is_heading = (
+                    line.startswith('##') or
+                    line.startswith('**') and line.endswith('**') or
+                    (line.isupper() and len(line) > 5) or
+                    line.startswith(('EXECUTIVE', 'TECHNICAL', 'FUNDAMENTAL', 'FORECAST', 'OUTLOOK', 'SUMMARY', 'ANALYSIS'))
+                )
+                
+                if is_heading:
                     if current_section:
-                        story.append(Spacer(1, 15))
-                    story.append(Paragraph(line, heading_style))
-                    current_section = line
-                elif line.startswith('- ') or line.startswith('• '):
-                    # Bullet points
-                    story.append(Paragraph(line, body_style))
+                        story.append(Spacer(1, 20))
+                    
+                    # Clean heading text
+                    clean_heading = line.strip('#*').strip()
+                    
+                    # Add colored heading box
+                    heading_table = Table([[Paragraph(clean_heading, heading_style)]], colWidths=[6*inch])
+                    heading_table.setStyle(TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, -1), light_gray),
+                        ('PADDING', (0, 0), (-1, -1), 12),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 15),
+                        ('LINEBELOW', (0, 0), (-1, -1), 2, accent_blue)
+                    ]))
+                    
+                    story.append(heading_table)
+                    story.append(Spacer(1, 15))
+                    current_section = clean_heading
+                    
+                elif line.startswith(('- ', '• ', '* ')):
+                    # Modern bullet points
+                    bullet_text = line.lstrip('- •*').strip()
+                    story.append(Paragraph(f"• {bullet_text}", bullet_style))
+                    
                 else:
-                    # Regular paragraphs
-                    story.append(Paragraph(line, body_style))
+                    # Enhanced paragraph formatting
+                    if line.startswith('**') and line.endswith('**'):
+                        # Bold emphasis
+                        bold_text = line.strip('*')
+                        story.append(Paragraph(f"<b>{bold_text}</b>", body_style))
+                    else:
+                        story.append(Paragraph(line, body_style))
             
-            # Add footer
-            story.append(Spacer(1, 30))
-            footer_style = ParagraphStyle(
-                'Footer',
-                parent=styles['Normal'],
-                fontSize=9,
-                textColor=colors.grey,
-                alignment=1
-            )
-            story.append(Paragraph("Generated by Son of Anton AI Assistant | Confidential Analysis", footer_style))
+            # Modern footer with branding
+            story.append(Spacer(1, 40))
+            
+            footer_table = Table([
+                [Paragraph("Generated by Son of Anton AI Assistant", 
+                          ParagraphStyle('FooterBrand', fontSize=10, textColor=accent_blue, fontName='Helvetica-Bold'))],
+                [Paragraph("Professional AI-Powered Business Intelligence", 
+                          ParagraphStyle('FooterTag', fontSize=8, textColor=dark_gray, fontName='Helvetica'))]
+            ], colWidths=[6*inch])
+            
+            footer_table.setStyle(TableStyle([
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('TOPPADDING', (0, 0), (-1, -1), 10),
+                ('LINEABOVE', (0, 0), (-1, 0), 1, light_gray)
+            ]))
+            
+            story.append(footer_table)
             
             doc.build(story)
             buffer.seek(0)
