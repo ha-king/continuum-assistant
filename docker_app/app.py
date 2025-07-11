@@ -755,6 +755,7 @@ for i, tab in enumerate(tabs):
                             with col2:
                                 if st.button("📎 Generate PDF", key=f"pdf_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"):
                                     try:
+                                        from document_generator import create_custom_report_pdf
                                         pdf_data = create_custom_report_pdf(doc_title, personalized_content)
                                         if pdf_data:
                                             st.download_button(
@@ -772,6 +773,7 @@ for i, tab in enumerate(tabs):
                             with col3:
                                 if st.button("📊 Generate PowerPoint", key=f"ppt_{tab_id}_{len(st.session_state.tab_messages[tab_id])}"):
                                     try:
+                                        from document_generator import create_custom_report_pptx
                                         pptx_data = create_custom_report_pptx(doc_title, personalized_content)
                                         if pptx_data:
                                             st.download_button(
