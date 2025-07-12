@@ -161,26 +161,12 @@ class CrashPreventionSystem:
             return False
     
     def create_crash_recovery_interface(self):
-        """Create UI for crash recovery"""
-        if st.sidebar.button("🔄 Recover Session", help="Restore from backup if session was lost"):
-            user_id = st.session_state.get('user_id', 'anonymous')
-            if self.restore_session_state(user_id):
-                st.sidebar.success("Session restored!")
-                st.rerun()
-            else:
-                st.sidebar.warning("No backup found")
-        
-        # Show warnings if any
+        """Create UI for crash recovery (simplified to avoid component issues)"""
+        # Simplified interface without problematic components
         warnings = self.detect_crash_conditions()
-        if warnings:
-            with st.sidebar.expander("⚠️ System Warnings", expanded=False):
-                for warning in warnings:
-                    st.warning(warning)
-                
-                if st.button("🧹 Clean Up"):
-                    if self.cleanup_session_state():
-                        st.success("Cleanup completed")
-                        st.rerun()
+        if len(warnings) > 3:
+            # Auto-cleanup if too many warnings
+            self.cleanup_session_state()
     
     def monitor_system_health(self):
         """Monitor system health and provide status"""
@@ -197,18 +183,21 @@ class CrashPreventionSystem:
 crash_prevention = CrashPreventionSystem()
 
 def initialize_crash_prevention():
-    """Initialize crash prevention system"""
-    # Auto-backup every 10 interactions
+    """Initialize crash prevention system (simplified)"""
+    # Auto-backup every 20 interactions (reduced frequency)
     total_messages = sum(len(msgs) for msgs in st.session_state.get('tab_messages', {}).values())
-    if total_messages > 0 and total_messages % 10 == 0:
-        user_id = st.session_state.get('user_id', 'anonymous')
-        crash_prevention.backup_session_state(user_id)
+    if total_messages > 0 and total_messages % 20 == 0:
+        try:
+            user_id = st.session_state.get('user_id', 'anonymous')
+            crash_prevention.backup_session_state(user_id)
+        except:
+            pass
     
-    # Create recovery interface
+    # Simplified recovery interface
     crash_prevention.create_crash_recovery_interface()
     
     # Auto-cleanup if needed
-    if total_messages > 200:
+    if total_messages > 150:
         crash_prevention.cleanup_session_state()
 
 def safe_execute_function(func, *args, **kwargs):
