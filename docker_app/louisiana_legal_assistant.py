@@ -1,4 +1,16 @@
 from strands import Agent, tool
+from datetime import datetime
+
+def get_realtime_context(query):
+    context = f"Current date/time: {datetime.now().strftime('%A, %B %d, %Y at %I:%M %p UTC')}\n"
+    if any(word in query.lower() for word in ['current', 'latest', 'today', 'now']):
+        try:
+            from research_assistant import research_assistant
+            web_data = research_assistant(f"Current Louisiana legal data: {query}")
+            if web_data and len(web_data) > 50:
+                context += f"Real-time data: {web_data[:200]}...\n"
+        except: pass
+    return f"{context}Query: {query}"
 from web_browser_assistant import web_browser_assistant
 import requests
 import urllib.parse
@@ -46,6 +58,7 @@ def louisiana_legal_assistant(query: str) -> str:
     """
     try:
         print("Routed to Louisiana Legal Assistant")
+        query = get_realtime_context(query)
         
         # Get Louisiana-specific legal information
         legal_research = perform_louisiana_legal_research(query)
