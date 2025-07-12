@@ -6,17 +6,16 @@ from auto_learning_system import initialize_auto_learning, trigger_manual_learni
 from enhanced_learning_system import initialize_enhanced_learning, trigger_enhanced_learning
 from personalized_intelligence import get_personalized_response, get_user_insights
 from proactive_intelligence import initialize_proactive_intelligence, get_proactive_alerts, get_intelligence_brief, trigger_market_analysis
+# Consolidated assistants
+from consolidated_assistants import (
+    financial_assistant, security_assistant, business_assistant,
+    tech_assistant, research_assistant
+)
+# Core assistants
 from english_assistant import english_assistant
-from language_assistant import language_assistant
 from math_assistant import math_assistant
-from computer_science_assistant import computer_science_assistant
-from financial_assistant import financial_assistant
 from aws_assistant import aws_assistant
-from business_dev_assistant import business_dev_assistant
-from lafayette_economic_assistant import lafayette_economic_assistant
-from research_assistant import research_assistant
 from louisiana_legal_assistant import louisiana_legal_assistant
-from web_browser_assistant import web_browser_assistant
 from no_expertise import general_assistant
 from psychology_assistant import psychology_assistant
 from cryptography_assistant import cryptography_assistant
@@ -403,18 +402,18 @@ st.write("🔐 **Authenticated Access** - Ask a question in any subject area, an
 teacher_tools = []
 if use_math:
     teacher_tools.append(math_assistant)
-if use_language:
-    teacher_tools.append(language_assistant)
 if use_english:
     teacher_tools.append(english_assistant)
-if use_cs:
-    teacher_tools.append(computer_science_assistant)
-if use_financial:
+if use_financial or use_cryptocurrency or use_economics:
     teacher_tools.append(financial_assistant)
 if use_aws:
     teacher_tools.append(aws_assistant)
-if use_business_dev:
-    teacher_tools.append(business_dev_assistant)
+if use_business_dev or use_entrepreneurship or use_professional_networking:
+    teacher_tools.append(business_assistant)
+if use_cs or use_ai or use_blockchain or use_web3:
+    teacher_tools.append(tech_assistant)
+if use_cybersec_defense or use_cybersec_offense or use_cryptography:
+    teacher_tools.append(security_assistant)
 if use_lafayette_economic:
     teacher_tools.append(lafayette_economic_assistant)
 if use_research:
@@ -480,6 +479,8 @@ if use_predictive_analysis:
 
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
+    from agent_pool import get_cached_agent
+    
     user_context = get_user_context()
     enhanced_prompt = f"""{TEACHER_SYSTEM_PROMPT}
 
@@ -502,11 +503,7 @@ AVAILABLE ASSISTANTS (Updated):
 - International Finance Assistant: For global finance and international monetary systems analysis
 - Predictive Analysis Assistant: For forecasting, predictive modeling, and statistical analysis with best practices
 """
-    return Agent(
-        system_prompt=enhanced_prompt,
-        callback_handler=None,
-        tools=teacher_tools
-    )
+    return get_cached_agent(enhanced_prompt, teacher_tools)
 
 teacher_agent = create_teacher_agent_with_datetime()
 
