@@ -250,34 +250,10 @@ if 'intelligence_initialized' not in st.session_state:
     st.success("🤖 Advanced Intelligence Systems Active")
     st.info("✨ Cross-domain synthesis, personalization, and proactive monitoring enabled")
 
-# Get user's timezone and geolocation from browser JavaScript
-if 'user_timezone' not in st.session_state or 'user_location' not in st.session_state:
-    st.components.v1.html("""
-    <script>
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    window.parent.postMessage({type: 'timezone', value: timezone}, '*');
-    
-    // Get geolocation if available
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                const location = {
-                    latitude: position.coords.latitude,
-                    longitude: position.coords.longitude,
-                    accuracy: position.coords.accuracy
-                };
-                window.parent.postMessage({type: 'location', value: location}, '*');
-            },
-            function(error) {
-                window.parent.postMessage({type: 'location', value: null}, '*');
-            }
-        );
-    }
-    </script>
-    """, height=0)
-    
-    # Set defaults
+# Set user timezone and location defaults
+if 'user_timezone' not in st.session_state:
     st.session_state.user_timezone = 'UTC'
+if 'user_location' not in st.session_state:
     st.session_state.user_location = None
 
 if "tab_ids" not in st.session_state:
