@@ -3,9 +3,32 @@ from datetime import datetime
 import requests
 
 def get_crypto_data(symbol):
-    """Get crypto data for any symbol"""
+    """Get crypto data from multiple sources"""
     import requests
-    crypto_map = {
+    
+    # Try Coinbase first (free, no auth needed)
+    coinbase_map = {
+        'bitcoin': 'BTC-USD', 'btc': 'BTC-USD',
+        'ethereum': 'ETH-USD', 'eth': 'ETH-USD',
+        'apecoin': 'APE-USD', 'ape': 'APE-USD',
+        'dogecoin': 'DOGE-USD', 'doge': 'DOGE-USD',
+        'cardano': 'ADA-USD', 'ada': 'ADA-USD',
+        'solana': 'SOL-USD', 'sol': 'SOL-USD'
+    }
+    
+    pair = coinbase_map.get(symbol.lower())
+    if pair:
+        try:
+            response = requests.get(f'https://api.coinbase.com/v2/exchange-rates?currency={pair.split("-")[0]}', timeout=5)
+            if response.status_code == 200:
+                data = response.json().get('data', {}).get('rates', {})
+                price = data.get('USD')
+                if price:
+                    return f"${float(price):.4f} (Coinbase)"
+        except: pass
+    
+    # Fallback to CoinGecko
+    gecko_map = {
         'bitcoin': 'bitcoin', 'btc': 'bitcoin',
         'ethereum': 'ethereum', 'eth': 'ethereum', 
         'apecoin': 'apecoin', 'ape': 'apecoin',
@@ -14,17 +37,16 @@ def get_crypto_data(symbol):
         'solana': 'solana', 'sol': 'solana'
     }
     
-    coin_id = crypto_map.get(symbol.lower())
-    if not coin_id: return None
+    coin_id = gecko_map.get(symbol.lower())
+    if coin_id:
+        try:
+            response = requests.get(f'https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd&include_24hr_change=true', timeout=5)
+            if response.status_code == 200:
+                data = response.json().get(coin_id, {})
+                if data:
+                    return f"${data.get('usd', 'N/A')} (24h: {data.get('usd_24h_change', 0):.2f}%)"
+        except: pass
     
-    try:
-        url = f'https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd&include_24hr_change=true&include_market_cap=true'
-        response = requests.get(url, timeout=10)
-        if response.status_code == 200:
-            data = response.json().get(coin_id, {})
-            if data:
-                return f"${data.get('usd', 'N/A')} (24h: {data.get('usd_24h_change', 0):.2f}%, MCap: ${data.get('usd_market_cap', 0):,.0f})"
-    except: pass
     return None
 
 def enhance_query_with_realtime(query, assistant_type):
