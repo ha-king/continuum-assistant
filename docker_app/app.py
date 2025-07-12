@@ -17,32 +17,8 @@ from math_assistant import math_assistant
 from aws_assistant import aws_assistant
 from louisiana_legal_assistant import louisiana_legal_assistant
 from no_expertise import general_assistant
-from psychology_assistant import psychology_assistant
-from cryptography_assistant import cryptography_assistant
-from blockchain_assistant import blockchain_assistant
-from cryptocurrency_assistant import cryptocurrency_assistant
-from tokenomics_assistant import tokenomics_assistant
-from economics_assistant import economics_assistant
-from cybersecurity_offense_assistant import cybersecurity_offense_assistant
-from cybersecurity_defense_assistant import cybersecurity_defense_assistant
-from web3_assistant import web3_assistant
-from entrepreneurship_assistant import entrepreneurship_assistant
-from formula1_assistant import formula1_assistant
-from ai_assistant import ai_assistant
-from microchip_supply_chain_assistant import microchip_supply_chain_assistant
-from opensource_supply_chain_assistant import opensource_supply_chain_assistant
-from nuclear_energy_assistant import nuclear_energy_assistant
-from louisiana_vc_assistant import louisiana_vc_assistant
-from data_acquisition_assistant import data_acquisition_assistant
-from data_analysis_assistant import data_analysis_assistant
-from automotive_assistant import automotive_assistant
-from business_contact_assistant import business_contact_assistant
-from public_records_assistant import public_records_assistant
-from professional_networking_assistant import professional_networking_assistant
-from company_intelligence_assistant import company_intelligence_assistant
-from geopolitical_assistant import geopolitical_assistant
-from international_finance_assistant import international_finance_assistant
-from predictive_analysis_assistant import predictive_analysis_assistant
+# Legacy assistants (now consolidated)
+from web_browser_assistant import web_browser_assistant
 from utils.auth import Auth
 from config_file import Config
 
@@ -415,7 +391,7 @@ if use_cs or use_ai or use_blockchain or use_web3:
 if use_cybersec_defense or use_cybersec_offense or use_cryptography:
     teacher_tools.append(security_assistant)
 if use_lafayette_economic:
-    teacher_tools.append(lafayette_economic_assistant)
+    teacher_tools.append(business_assistant)  # Lafayette economic queries handled by business assistant
 if use_research:
     teacher_tools.append(research_assistant)
 if use_louisiana_legal:
@@ -424,58 +400,9 @@ if use_web_browser:
     teacher_tools.append(web_browser_assistant)
 if use_general:
     teacher_tools.append(general_assistant)
-if use_psychology:
-    teacher_tools.append(psychology_assistant)
-if use_cryptography:
-    teacher_tools.append(cryptography_assistant)
-if use_blockchain:
-    teacher_tools.append(blockchain_assistant)
-if use_cryptocurrency:
-    teacher_tools.append(cryptocurrency_assistant)
-if use_tokenomics:
-    teacher_tools.append(tokenomics_assistant)
-if use_economics:
-    teacher_tools.append(economics_assistant)
-if use_cybersec_offense:
-    teacher_tools.append(cybersecurity_offense_assistant)
-if use_cybersec_defense:
-    teacher_tools.append(cybersecurity_defense_assistant)
-if use_web3:
-    teacher_tools.append(web3_assistant)
-if use_entrepreneurship:
-    teacher_tools.append(entrepreneurship_assistant)
-if use_formula1:
-    teacher_tools.append(formula1_assistant)
-if use_ai:
-    teacher_tools.append(ai_assistant)
-if use_microchip:
-    teacher_tools.append(microchip_supply_chain_assistant)
-if use_opensource:
-    teacher_tools.append(opensource_supply_chain_assistant)
-if use_nuclear:
-    teacher_tools.append(nuclear_energy_assistant)
-if use_louisiana_vc:
-    teacher_tools.append(louisiana_vc_assistant)
-if use_data_acquisition:
-    teacher_tools.append(data_acquisition_assistant)
-if use_data_analysis:
-    teacher_tools.append(data_analysis_assistant)
-if use_automotive:
-    teacher_tools.append(automotive_assistant)
-if use_business_contact:
-    teacher_tools.append(business_contact_assistant)
-if use_public_records:
-    teacher_tools.append(public_records_assistant)
-if use_professional_networking:
-    teacher_tools.append(professional_networking_assistant)
-if use_company_intelligence:
-    teacher_tools.append(company_intelligence_assistant)
-if use_geopolitical:
-    teacher_tools.append(geopolitical_assistant)
-if use_international_finance:
-    teacher_tools.append(international_finance_assistant)
-if use_predictive_analysis:
-    teacher_tools.append(predictive_analysis_assistant)
+if use_web_browser:
+    teacher_tools.append(web_browser_assistant)
+# All other specialized queries now handled by consolidated assistants
 
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
@@ -551,7 +478,7 @@ for i, tab in enumerate(tabs):
                             content = f"It is {get_current_datetime()}"
                         # Handle crypto price queries - route to cryptocurrency assistant
                         elif any(word in prompt.lower() for word in ['crypto', 'bitcoin', 'ethereum', 'apecoin', 'price', 'coinbase']):
-                            content = cryptocurrency_assistant(f"{datetime_context}{prompt}")
+                            content = financial_assistant(f"{datetime_context}{prompt}")
                         elif any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit', 'current', 'today', 'now', 'latest', 'real-time']):
                             try:
                                 # Try web browser first, fallback to research assistant
