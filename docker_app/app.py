@@ -519,6 +519,11 @@ with st.expander("📄 Professional Tools Suite", expanded=False):
     with tool_tab3:
         create_multimodal_interface()
 
+# Add Gmail campaign interface
+with st.expander("📧 Email Campaigns", expanded=False):
+    from gmail_integration import create_gmail_campaign_interface
+    create_gmail_campaign_interface()
+
 teacher_tools = []
 if use_math:
     teacher_tools.append(math_assistant)
