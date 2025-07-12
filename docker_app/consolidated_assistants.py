@@ -1,5 +1,23 @@
 from strands import Agent, tool
-from real_time_data import enhance_query_with_realtime
+from datetime import datetime
+import requests
+
+def enhance_query_with_realtime(query, assistant_type):
+    """Add current datetime and real-time data to queries"""
+    current_time = datetime.now().strftime('%A, %B %d, %Y at %I:%M %p UTC')
+    context = f"Current date and time: {current_time}\n"
+    
+    # Add real-time web data for current queries
+    if any(word in query.lower() for word in ['current', 'latest', 'today', 'now', 'price']):
+        try:
+            from web_browser_assistant import web_browser_assistant
+            web_data = web_browser_assistant(f"Current {assistant_type} data: {query}")
+            if web_data and len(web_data) > 50:
+                context += f"Real-time data: {web_data[:200]}...\n"
+        except:
+            pass
+    
+    return f"{context}\nQuery: {query}"
 
 # Consolidated Financial Assistant (combines financial, crypto, economics)
 @tool
@@ -8,12 +26,13 @@ def financial_assistant(query: str) -> str:
     query = enhance_query_with_realtime(query, "financial")
     
     system_prompt = """
-    You are a comprehensive financial expert covering:
-    - Traditional finance and accounting
-    - Cryptocurrency and blockchain markets
-    - Economic analysis and trends
-    - Tokenomics and DeFi protocols
+    You are a comprehensive financial expert with REAL-TIME market data access covering:
+    - Traditional finance and accounting with current market data
+    - Cryptocurrency and blockchain markets with live prices
+    - Economic analysis and current trends
+    - Tokenomics and DeFi protocols with real-time metrics
     
+    IMPORTANT: You receive current date/time context. Use this for all analysis.
     Provide expert analysis with real-time data and appropriate risk disclaimers.
     """
     
@@ -78,11 +97,14 @@ def research_assistant(query: str) -> str:
     query = enhance_query_with_realtime(query, "research")
     
     system_prompt = """
-    You are a comprehensive research expert with real-time web access covering:
-    - Internet research and information gathering
-    - Website analysis and company intelligence
-    - Data analysis and predictive modeling
-    - Public records and business research
+    You are a comprehensive research expert with ACTIVE real-time web access covering:
+    - Live internet research and current information gathering
+    - Real-time website analysis and company intelligence
+    - Current data analysis and predictive modeling
+    - Live public records and business research
+    
+    IMPORTANT: You have access to current web data and real-time information.
+    Always provide the most current and up-to-date information available.
     """
     
     agent = Agent(system_prompt=system_prompt)
