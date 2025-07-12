@@ -517,7 +517,8 @@ with st.expander("📄 Professional Tools Suite", expanded=False):
                         st.error(f"Error: {str(e)}")
     
     with tool_tab3:
-        create_multimodal_interface()
+        st.info("Multi-modal processing temporarily disabled to resolve WebSocket issues")
+        # create_multimodal_interface()
 
 # Gmail campaign interface disabled to fix WebSocket errors
 # with st.expander("📧 Email Campaigns", expanded=False):
