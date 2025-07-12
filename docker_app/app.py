@@ -78,77 +78,23 @@ def get_user_context():
     return context + "\n"
 
 TEACHER_SYSTEM_PROMPT = """
-You are TeachAssist, a sophisticated educational orchestrator with ACTIVE WEB BROWSING CAPABILITIES. 
-You have access to current date and time information which you must provide to all specialized agents.
-Your role is to:
+You are TeachAssist, an AI orchestrator with real-time data access.
 
-1. Analyze incoming student queries and determine the most appropriate specialized agent to handle them:
+AVAILABLE ASSISTANTS:
+- Math Assistant: calculations and mathematical problems
+- English Assistant: writing, grammar, literature
+- Financial Assistant: finance, crypto, economics, market analysis
+- AWS Assistant: cloud architecture and best practices
+- Business Assistant: business development, networking, company intelligence
+- Tech Assistant: programming, AI, blockchain, web3
+- Security Assistant: cybersecurity, cryptography, threat analysis
+- Research Assistant: internet research with real-time data access
+- Louisiana Legal Assistant: Louisiana business law
+- Web Browser Assistant: website browsing and analysis
+- General Assistant: other topics
 
-   AVAILABLE ASSISTANTS (ALL FUNCTIONAL):
-   - Math Assistant: For mathematical calculations, problems, and concepts
-   - English Assistant: For writing, grammar, literature, and composition
-   - Language Assistant: For translation and language-related queries
-   - Computer Science Assistant: For programming, algorithms, data structures, and code execution
-   - Financial Assistant: For financial records, reports, accounting, and business finance
-   - AWS Assistant: For cloud architecture, AWS services, and best practices
-   - Business Dev Assistant: For business development, partnerships, and growth strategies
-   - Lafayette Economic Assistant: For economic opportunities in Lafayette, Louisiana
-   - Research Assistant: *** ACTIVE AND FUNCTIONAL *** For internet research and web-based information gathering with real-time data access
-   - Louisiana Legal Assistant: For Louisiana business legal matters and compliance
-   - Web Browser Assistant: *** ACTIVE AND FUNCTIONAL *** For real-time website browsing, content analysis, company research, and any website-related queries
-   - General Assistant: For all other topics outside these specialized domains
-   - Automotive Assistant: For auto mechanics, repair diagnosis, suspension systems, steering alignment, electrical diagrams, and electronics
-
-   IMPORTANT: The Web Browser Assistant IS AVAILABLE AND FUNCTIONAL - use it for ANY website-related queries.
-
-2. Key Responsibilities:
-   - Accurately classify student queries by subject area
-   - Route requests to the appropriate specialized agent
-   - Maintain context and coordinate multi-step problems
-   - Ensure cohesive responses when multiple agents are needed
-
-3. Decision Protocol:
-   - If query involves calculations/numbers → Math Assistant
-   - If query involves writing/literature/grammar → English Assistant
-   - If query involves translation → Language Assistant
-   - If query involves programming/coding/algorithms/computer science → Computer Science Assistant
-   - If query involves finance/accounting/business reports → Financial Assistant
-   - If query involves AWS/cloud architecture/best practices → AWS Assistant
-   - If query involves business development/partnerships/growth → Business Dev Assistant
-   - If query involves Lafayette LA economic opportunities → Lafayette Economic Assistant
-   - If query involves research/web search/current information/real-time data → Research Assistant
-   - If query involves Louisiana legal/business law matters → Louisiana Legal Assistant
-   - If query involves browsing websites/viewing web content/website analysis/company information → Web Browser Assistant
-   - If query mentions specific websites (like .com, .org) or asks to "browse" or "visit" → Web Browser Assistant
-   - If query asks about company offerings, services, or business analysis → Web Browser Assistant
-   - If query involves automotive repair, mechanics, car diagnostics, suspension, alignment, or car electronics → Automotive Assistant
-   - If query involves business contact research or company contact information → Business Contact Assistant
-   - If query involves public records research or legal compliance → Public Records Assistant
-   - If query involves professional networking or business development → Professional Networking Assistant
-   - If query involves competitive analysis or company intelligence → Company Intelligence Assistant
-   - If query involves geopolitical analysis or international relations → Geopolitical Assistant
-   - If query involves international finance or global monetary systems → International Finance Assistant
-   - If query involves forecasting, predictive modeling, or statistical analysis → Predictive Analysis Assistant
-   - If query is outside these specialized areas → General Assistant
-   - For complex queries, coordinate multiple agents as needed
-
-*** MANDATORY WEB BROWSING RULES - NO EXCEPTIONS ***:
-- ANY query containing "browse", "website", "visit", ".com", ".org", "infascination", "company", "current", "today", "now", "latest" → IMMEDIATELY use web_browser_assistant or research_assistant tool
-- ANY query asking about specific companies or their information → IMMEDIATELY use web_browser_assistant tool
-- ANY query requesting website analysis or company research → IMMEDIATELY use web_browser_assistant tool
-- If user asks to browse ANY website → CALL web_browser_assistant(query) IMMEDIATELY
-- If user mentions ANY company name → CALL web_browser_assistant(query) IMMEDIATELY
-
-*** CRITICAL: You HAVE web browsing capabilities through the web_browser_assistant tool. NEVER claim you don't have web browsing capabilities. ***
-
-*** MANDATORY ROUTING CHECK ***:
-1. Does the query mention websites, companies, browsing, or .com/.org domains? → YES = CALL web_browser_assistant(query)
-2. Does the query ask about company information or services? → YES = CALL web_browser_assistant(query)
-3. Does the query request website analysis? → YES = CALL web_browser_assistant(query)
-
-IF ANY OF THE ABOVE = YES, YOU MUST USE THE WEB BROWSER ASSISTANT TOOL.
-
-Always confirm your understanding before routing to ensure accurate assistance.
+Route queries to the most appropriate assistant based on the topic.
+For current/real-time queries, use Research or Web Browser assistants.
 """
 
 def determine_action(agent, query):
@@ -325,34 +271,25 @@ with st.sidebar:
             use_data_analysis = st.checkbox("Data Analysis", value=True)
             use_predictive_analysis = st.checkbox("Predictive Analysis", value=True)
         
-        # Set unused assistants to False in advanced mode
-        use_language = use_lafayette_economic = use_general = use_psychology = False
-        use_cryptography = use_tokenomics = use_cybersec_offense = use_web3 = False
-        use_formula1 = use_microchip = use_opensource = use_nuclear = False
-        use_louisiana_vc = use_data_acquisition = use_automotive = False
-        use_professional_networking = False
+        # Set unused variables to False in advanced mode
+        use_general = True
     else:
         # All assistants enabled in auto-route mode
-        use_math = use_english = use_language = use_cs = use_financial = use_aws = True
-        use_business_dev = use_lafayette_economic = use_research = use_louisiana_legal = True
-        use_web_browser = use_general = use_psychology = use_cryptography = True
-        use_blockchain = use_cryptocurrency = use_tokenomics = use_economics = True
-        use_cybersec_offense = use_cybersec_defense = use_web3 = use_entrepreneurship = True
-        use_formula1 = use_ai = use_microchip = use_opensource = use_nuclear = True
-        use_louisiana_vc = use_data_acquisition = use_data_analysis = use_automotive = True
-        use_business_contact = use_public_records = use_professional_networking = True
-        use_company_intelligence = use_geopolitical = use_international_finance = True
-        use_predictive_analysis = True
+        use_math = use_english = use_cs = use_financial = use_aws = True
+        use_business_dev = use_research = use_louisiana_legal = True
+        use_web_browser = use_general = True
+        use_economics = use_entrepreneurship = use_ai = True
+        use_blockchain = use_cryptocurrency = use_cybersec_defense = True
     
     st.divider()
-    st.caption(f"Active Assistants: {sum([use_math, use_english, use_language, use_cs, use_financial, use_aws, use_business_dev, use_lafayette_economic, use_research, use_louisiana_legal, use_web_browser, use_general, use_psychology, use_cryptography, use_blockchain, use_cryptocurrency, use_tokenomics, use_economics, use_cybersec_offense, use_cybersec_defense, use_web3, use_entrepreneurship, use_formula1, use_ai, use_microchip, use_opensource, use_nuclear, use_louisiana_vc, use_data_acquisition, use_data_analysis, use_automotive, use_business_contact, use_public_records, use_professional_networking, use_company_intelligence, use_geopolitical, use_international_finance, use_predictive_analysis])}")
+    st.caption(f"Active Assistants: {sum([use_math, use_english, use_cs, use_financial, use_aws, use_business_dev, use_research, use_louisiana_legal, use_web_browser, use_general])}")
     
     with st.expander("📊 Intelligence Dashboard", expanded=False):
         col1, col2 = st.columns(2)
         
         with col1:
             if st.button("🧠 Test Enhanced Learning"):
-                result = trigger_enhanced_learning("cryptocurrency_assistant")
+                result = trigger_enhanced_learning("financial_assistant")
                 st.success(result)
             
             if st.button("📊 Market Analysis"):
@@ -390,8 +327,6 @@ if use_cs or use_ai or use_blockchain or use_web3:
     teacher_tools.append(tech_assistant)
 if use_cybersec_defense or use_cybersec_offense or use_cryptography:
     teacher_tools.append(security_assistant)
-if use_lafayette_economic:
-    teacher_tools.append(business_assistant)  # Lafayette economic queries handled by business assistant
 if use_research:
     teacher_tools.append(research_assistant)
 if use_louisiana_legal:
@@ -400,9 +335,6 @@ if use_web_browser:
     teacher_tools.append(web_browser_assistant)
 if use_general:
     teacher_tools.append(general_assistant)
-if use_web_browser:
-    teacher_tools.append(web_browser_assistant)
-# All other specialized queries now handled by consolidated assistants
 
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
@@ -411,24 +343,10 @@ def create_teacher_agent_with_datetime():
     user_context = get_user_context()
     enhanced_prompt = f"""{TEACHER_SYSTEM_PROMPT}
 
-*** CRITICAL CONTEXT INSTRUCTION ***:
-{user_context}
-You MUST include this current date/time and location information when calling ANY specialized agent tool.
-When routing queries to specialized agents, always prepend the user context to ensure they have temporal and geographical awareness.
+CONTEXT: {user_context}
+Include current date/time when calling assistants.
 
-*** TIME/DATE QUERIES ***:
-If user asks "what time is it", "what day is it", "current time", "current date", or similar:
-Respond directly with: "It is {user_context.strip()}" - DO NOT route to other agents.
-
-AVAILABLE ASSISTANTS (Updated):
-- Automotive Assistant: For auto mechanics, repair diagnosis, suspension systems, steering alignment, electrical diagrams, and electronics
-- Business Contact Assistant: For finding legitimate business contact information and company contacts
-- Public Records Assistant: For public records research and legal compliance guidance
-- Professional Networking Assistant: For business networking and professional relationship building
-- Company Intelligence Assistant: For competitive analysis and business intelligence research
-- Geopolitical Assistant: For geopolitical analysis and international relations expertise
-- International Finance Assistant: For global finance and international monetary systems analysis
-- Predictive Analysis Assistant: For forecasting, predictive modeling, and statistical analysis with best practices
+For time/date queries, respond directly with current time.
 """
     return get_cached_agent(enhanced_prompt, teacher_tools)
 
