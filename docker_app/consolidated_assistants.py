@@ -52,19 +52,30 @@ def get_crypto_data(symbol):
 def get_f1_data():
     """Get current F1 race data from multiple sources"""
     try:
-        # Try Formula 1 API (if available)
+        # Try ESPN F1 schedule
+        response = requests.get('https://www.espn.com/f1/schedule', timeout=5)
+        if response.status_code == 200:
+            import re
+            content = response.text
+            # Extract race info from ESPN page
+            race_match = re.search(r'<h3[^>]*>([^<]+)</h3>.*?<span[^>]*>([^<]+)</span>', content, re.DOTALL)
+            if race_match:
+                return f"Next F1 Race: {race_match.group(1)} - {race_match.group(2)} (ESPN)"
+    except: pass
+    
+    try:
+        # Try Ergast API
         response = requests.get('https://ergast.com/api/f1/current/next.json', timeout=5)
         if response.status_code == 200:
             data = response.json()
             races = data.get('MRData', {}).get('RaceTable', {}).get('Races', [])
             if races:
                 race = races[0]
-                return f"Next F1 Race: {race.get('raceName', 'Unknown')} at {race.get('Circuit', {}).get('circuitName', 'Unknown')} on {race.get('date', 'TBD')}"
+                return f"Next F1 Race: {race.get('raceName', 'Unknown')} at {race.get('Circuit', {}).get('circuitName', 'Unknown')} on {race.get('date', 'TBD')} (Ergast)"
     except: pass
     
-    # Get current date for context
     current_date = datetime.now()
-    return f"Current F1 season: {current_date.year} - Check Formula1.com for latest race schedule"
+    return f"Current F1 season: {current_date.year} - Sources: ESPN F1, OpenF1 GitHub, Formula1.com"
 
 def enhance_query_with_realtime(query, assistant_type):
     """Add current datetime and real-time data to queries"""
