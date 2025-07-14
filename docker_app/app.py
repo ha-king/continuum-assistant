@@ -293,11 +293,11 @@ if use_financial or use_cryptocurrency or use_economics:
     teacher_tools.append(financial_assistant)
 if use_aws:
     teacher_tools.append(aws_assistant)
-if use_business_dev or use_entrepreneurship or use_professional_networking:
+if use_business_dev or use_entrepreneurship:
     teacher_tools.append(business_assistant)
-if use_cs or use_ai or use_blockchain or use_web3:
+if use_cs or use_ai or use_blockchain:
     teacher_tools.append(tech_assistant)
-if use_cybersec_defense or use_cybersec_offense or use_cryptography:
+if use_cybersec_defense:
     teacher_tools.append(security_assistant)
 # Always include sports assistant for F1 queries
 teacher_tools.append(sports_assistant)
