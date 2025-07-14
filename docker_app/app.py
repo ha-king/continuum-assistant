@@ -281,34 +281,6 @@ with st.sidebar:
     
     st.divider()
     st.caption(f"Active Assistants: {sum([use_math, use_english, use_cs, use_financial, use_aws, use_business_dev, use_research, use_louisiana_legal, use_web_browser, use_general])}")
-    
-
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🧠 Test Enhanced Learning"):
-                result = trigger_enhanced_learning("financial_assistant")
-                st.success(result)
-            
-            if st.button("📊 Market Analysis"):
-                analysis = trigger_market_analysis()
-                st.info(analysis[:300] + "..." if len(analysis) > 300 else analysis)
-        
-        with col2:
-            if st.button("🚨 View Alerts"):
-                alerts = get_proactive_alerts()
-                if alerts:
-                    for alert in alerts[-3:]:
-                        st.warning(f"{alert['type']}: {alert['message'][:100]}...")
-                else:
-                    st.info("No recent alerts")
-            
-            if st.button("📝 Intelligence Brief"):
-                brief = get_intelligence_brief()
-                st.text_area("Daily Brief", brief[:500] + "..." if len(brief) > 500 else brief, height=150)
-
-
-st.write("🔐 **Authenticated Access** - Ask a question in any subject area, and I'll route it to the appropriate specialist.")
 
 teacher_tools = []
 if use_math:
