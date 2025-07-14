@@ -9,7 +9,7 @@ from proactive_intelligence import initialize_proactive_intelligence, get_proact
 # Consolidated assistants
 from consolidated_assistants import (
     financial_assistant, security_assistant, business_assistant,
-    tech_assistant, research_assistant
+    tech_assistant, research_assistant, sports_assistant
 )
 # Core assistants
 from english_assistant import english_assistant
@@ -86,12 +86,14 @@ AVAILABLE ASSISTANTS:
 - Business Assistant: business development, networking, company intelligence
 - Tech Assistant: programming, AI, blockchain, web3
 - Security Assistant: cybersecurity, cryptography, threat analysis
+- Sports Assistant: Formula 1, motorsports, racing with real-time data
 - Research Assistant: internet research with real-time data access
 - Louisiana Legal Assistant: Louisiana business law
 - Web Browser Assistant: website browsing and analysis
 - General Assistant: other topics
 
 Route queries to the most appropriate assistant based on the topic.
+For F1/Formula 1/racing queries, use Sports Assistant.
 For current/real-time queries, use Research or Web Browser assistants.
 """
 
@@ -297,6 +299,8 @@ if use_cs or use_ai or use_blockchain or use_web3:
     teacher_tools.append(tech_assistant)
 if use_cybersec_defense or use_cybersec_offense or use_cryptography:
     teacher_tools.append(security_assistant)
+# Always include sports assistant for F1 queries
+teacher_tools.append(sports_assistant)
 if use_research:
     teacher_tools.append(research_assistant)
 if use_louisiana_legal:
@@ -364,6 +368,9 @@ for i, tab in enumerate(tabs):
                         time_keywords = ['what time', 'what day', 'current time', 'current date', 'time is it', 'day is it']
                         if any(keyword in prompt.lower() for keyword in time_keywords):
                             content = f"It is {get_current_datetime()}"
+                        # Handle F1/Formula 1 queries - route to sports assistant
+                        elif any(word in prompt.lower() for word in ['f1', 'formula 1', 'formula one', 'grand prix', 'race', 'racing', 'motorsport']):
+                            content = sports_assistant(f"{datetime_context}{prompt}")
                         # Handle crypto price queries - route to cryptocurrency assistant
                         elif any(word in prompt.lower() for word in ['crypto', 'bitcoin', 'ethereum', 'apecoin', 'price', 'coinbase']):
                             content = financial_assistant(f"{datetime_context}{prompt}")

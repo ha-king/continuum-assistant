@@ -49,12 +49,36 @@ def get_crypto_data(symbol):
     
     return None
 
+def get_f1_data():
+    """Get current F1 race data from multiple sources"""
+    try:
+        # Try Formula 1 API (if available)
+        response = requests.get('https://ergast.com/api/f1/current/next.json', timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            races = data.get('MRData', {}).get('RaceTable', {}).get('Races', [])
+            if races:
+                race = races[0]
+                return f"Next F1 Race: {race.get('raceName', 'Unknown')} at {race.get('Circuit', {}).get('circuitName', 'Unknown')} on {race.get('date', 'TBD')}"
+    except: pass
+    
+    # Get current date for context
+    current_date = datetime.now()
+    return f"Current F1 season: {current_date.year} - Check Formula1.com for latest race schedule"
+
 def enhance_query_with_realtime(query, assistant_type):
     """Add current datetime and real-time data to queries"""
-    context = "LIVE MARKET DATA:\n"
+    current_datetime = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
+    context = f"CURRENT DATE/TIME: {current_datetime}\n\nLIVE DATA:\n"
     
     # Get real-time data for relevant queries
-    if any(word in query.lower() for word in ['current', 'latest', 'today', 'now', 'price']):
+    if any(word in query.lower() for word in ['current', 'latest', 'today', 'now', 'price', 'race', 'f1', 'formula']):
+        # F1 data for racing queries
+        if any(word in query.lower() for word in ['f1', 'formula', 'race', 'grand prix']):
+            f1_data = get_f1_data()
+            if f1_data:
+                context += f"F1 DATA: {f1_data}\n"
+        
         # Extract crypto symbols from query
         words = query.lower().split()
         for word in words:
@@ -141,6 +165,29 @@ def tech_assistant(query: str) -> str:
     - Artificial intelligence and machine learning
     - Blockchain and web3 technologies
     - Software architecture and best practices
+    """
+    
+    agent = Agent(system_prompt=system_prompt)
+    return str(agent(query))
+
+# Consolidated Sports Assistant (includes F1, motorsports)
+@tool
+def sports_assistant(query: str) -> str:
+    """Handles Formula 1, motorsports, and sports analysis with real-time data"""
+    query = enhance_query_with_realtime(query, "sports")
+    
+    system_prompt = f"""
+    You are a comprehensive sports expert with REAL-TIME data access covering:
+    - Formula 1 racing with current race schedules and results
+    - Motorsports analysis and technical insights
+    - Live race data and championship standings
+    - Current sports events and schedules
+    
+    IMPORTANT: You receive live data including current date/time and F1 race information.
+    Always use the real-time data provided to give accurate current information.
+    
+    Current context: It is currently {datetime.now().strftime("%B %Y")}. 
+    Always check the live data provided for the most current race information.
     """
     
     agent = Agent(system_prompt=system_prompt)
