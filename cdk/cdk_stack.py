@@ -39,18 +39,11 @@ class CdkStack(Stack):
                                                   generate_secret=True
                                                   )
 
-        # Store Cognito parameters in a Secrets Manager secret
-        secret = secretsmanager.Secret(self, f"{prefix}ParamCognitoSecret",
-                                       secret_object_value={
-                                           "pool_id": SecretValue.unsafe_plain_text(user_pool.user_pool_id),
-                                           "app_client_id": SecretValue.unsafe_plain_text(user_pool_client.user_pool_client_id),
-                                           "app_client_secret": user_pool_client.user_pool_client_secret
-                                       },
-                                       # This secret name should be identical
-                                       # to the one defined in the Streamlit
-                                       # container
-                                       secret_name=f"{Config.SECRETS_MANAGER_ID}-{env_name}"
-                                       )
+        # Import existing Cognito secret from Secrets Manager
+        secret = secretsmanager.Secret.from_secret_name_v2(
+            self, f"{prefix}ParamCognitoSecret",
+            secret_name=f"{Config.SECRETS_MANAGER_ID}-{env_name}"
+        )
 
 
         # VPC for ALB and ECS cluster
