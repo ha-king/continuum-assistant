@@ -66,10 +66,8 @@ def get_user_context():
     """Get user context including location and timezone"""
     from datetime import datetime
     
-    # Ensure we always use actual current time
-    actual_current_time = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
-    context = f"IMPORTANT: Current actual date and time is {actual_current_time}\n"
-    context += f"User's local time: {get_current_datetime()}\n"
+    # Provide context without specific dates that confuse the model
+    context = "You have access to current real-time market data.\n"
     
     location = st.session_state.get('user_location')
     if location:
@@ -284,7 +282,7 @@ with st.sidebar:
     st.divider()
     st.caption(f"Active Assistants: {sum([use_math, use_english, use_cs, use_financial, use_aws, use_business_dev, use_research, use_louisiana_legal, use_web_browser, use_general])}")
     
-    with st.expander("📊 Intelligence Dashboard", expanded=False):
+
         col1, col2 = st.columns(2)
         
         with col1:

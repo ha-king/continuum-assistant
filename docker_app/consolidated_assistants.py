@@ -51,8 +51,7 @@ def get_crypto_data(symbol):
 
 def enhance_query_with_realtime(query, assistant_type):
     """Add current datetime and real-time data to queries"""
-    current_time = datetime.now().strftime('%A, %B %d, %Y at %I:%M %p UTC')
-    context = f"Current date and time: {current_time}\n"
+    context = "LIVE MARKET DATA:\n"
     
     # Get real-time data for relevant queries
     if any(word in query.lower() for word in ['current', 'latest', 'today', 'now', 'price']):
