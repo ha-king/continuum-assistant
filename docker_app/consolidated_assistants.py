@@ -90,12 +90,15 @@ def enhance_query_with_realtime(query, assistant_type):
             if f1_data:
                 context += f"F1 DATA: {f1_data}\n"
         
-        # Extract crypto symbols from query
-        words = query.lower().split()
-        for word in words:
-            crypto_data = get_crypto_data(word)
-            if crypto_data:
-                context += f"LIVE {word.upper()} DATA: {crypto_data}\n"
+        # Extract crypto symbols from query (handle variations)
+        query_lower = query.lower()
+        crypto_keywords = ['bitcoin', 'btc', 'ethereum', 'eth', 'apecoin', 'ape', 'dogecoin', 'doge', 'cardano', 'ada', 'solana', 'sol']
+        
+        for keyword in crypto_keywords:
+            if keyword in query_lower:
+                crypto_data = get_crypto_data(keyword)
+                if crypto_data:
+                    context += f"LIVE {keyword.upper()} DATA: {crypto_data}\n"
         
         # Get web data for other current queries
         try:
