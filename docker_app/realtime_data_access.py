@@ -69,15 +69,23 @@ class RealTimeDataAccess:
             if web_data:
                 data_parts.append(f"WEB DATA: {web_data}")
         
-        # Aviation data for aviation-related queries
-        if any(word in query_lower for word in ['flight', 'airport', 'aviation', 'faa', 'aircraft', 'delay', 'air traffic']):
+        # Aviation data - detect N-numbers for flight position
+        flight_id = None
+        for word in query.split():
+            if len(word) >= 4 and word.upper().startswith('N'):
+                flight_id = word.upper()
+                break
+        
+        if flight_id or any(word in query_lower for word in ['flight', 'airport', 'aviation', 'aircraft']):
             try:
                 from aviation_data_access import aviation_data
-                aviation_info = aviation_data.get_flight_tracking_sources()
-                if aviation_info:
-                    data_parts.append(f"AVIATION: {aviation_info}")
+                if flight_id:
+                    aviation_info = aviation_data.get_flight_position(flight_id)
+                else:
+                    aviation_info = "FlightAware.com | FlightRadar24.com | ADS-B Exchange"
+                data_parts.append(f"AVIATION: {aviation_info}")
             except:
-                data_parts.append("AVIATION: Check FAA and flight tracking services")
+                data_parts.append("AVIATION: Check flight tracking services")
         
         # AWS/Tech updates
         if assistant_type == "aws" or any(word in query_lower for word in ['aws', 'amazon web services', 'cloud']):
