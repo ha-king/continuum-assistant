@@ -46,11 +46,10 @@ class RealTimeDataAccess:
             if crypto_data:
                 data_parts.append(f"CRYPTO PRICES: {crypto_data}")
         
-        # F1/Sports data
-        if any(word in query_lower for word in ['f1', 'formula', 'race', 'grand prix', 'motorsport']):
+        # F1/Sports data - always provide F1 context for racing queries
+        if any(word in query_lower for word in ['f1', 'formula', 'race', 'grand prix', 'motorsport', 'next']):
             f1_data = self.get_f1_data()
-            if f1_data:
-                data_parts.append(f"F1 DATA: {f1_data}")
+            data_parts.append(f"F1 DATA: {f1_data}")
         
         # Weather data for location-based queries
         if any(word in query_lower for word in ['weather', 'temperature', 'forecast']):
@@ -129,25 +128,81 @@ class RealTimeDataAccess:
         return None
     
     def get_f1_data(self) -> Optional[str]:
-        """Get current F1 race information"""
+        """Get current F1 race information from multiple sources"""
+        sources = []
+        
+        # 1. Try ESPN F1 API (most reliable)
         try:
-            # Try Ergast API for F1 data
-            url = "https://ergast.com/api/f1/current/next.json"
+            url = "https://site.api.espn.com/apis/site/v2/sports/racing/f1/scoreboard"
             response = self.session.get(url, timeout=self.timeout)
             
             if response.status_code == 200:
                 data = response.json()
-                races = data.get('MRData', {}).get('RaceTable', {}).get('Races', [])
-                if races:
-                    race = races[0]
-                    race_name = race.get('raceName', 'Unknown')
-                    circuit = race.get('Circuit', {}).get('circuitName', 'Unknown')
-                    date = race.get('date', 'TBD')
-                    return f"Next: {race_name} at {circuit} on {date}"
+                events = data.get('events', [])
+                if events:
+                    event = events[0]
+                    name = event.get('name', 'Unknown')
+                    date = event.get('date', 'TBD')
+                    status = event.get('status', {}).get('type', {}).get('description', 'Scheduled')
+                    sources.append(f"Next: {name} - {date[:10]} ({status})")
         except:
             pass
         
-        return f"F1 Season {datetime.now().year} - Check official sources for current race schedule"
+        # 2. Try OpenF1 API for additional data
+        try:
+            url = "https://api.openf1.org/v1/sessions?session_name=Race&year=2025"
+            response = self.session.get(url, timeout=self.timeout)
+            
+            if response.status_code == 200:
+                sessions = response.json()
+                if sessions:
+                    current_time = datetime.now()
+                    for session in sessions:
+                        session_date = session.get('date_start', '')
+                        if session_date:
+                            try:
+                                session_dt = datetime.fromisoformat(session_date.replace('Z', '+00:00'))
+                                if session_dt > current_time:
+                                    location = session.get('location', 'Unknown')
+                                    sources.append(f"OpenF1: {location} on {session_date[:10]}")
+                                    break
+                            except:
+                                continue
+        except:
+            pass
+        
+        # 3. Try Ergast API as fallback
+        if not sources:
+            try:
+                url = "https://ergast.com/api/f1/current/next.json"
+                response = self.session.get(url, timeout=self.timeout)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    races = data.get('MRData', {}).get('RaceTable', {}).get('Races', [])
+                    if races:
+                        race = races[0]
+                        name = race.get('raceName', 'Unknown')
+                        circuit = race.get('Circuit', {}).get('circuitName', 'Unknown')
+                        date = race.get('date', 'TBD')
+                        sources.append(f"Ergast: {name} at {circuit} on {date}")
+            except:
+                pass
+        
+        # Return combined data or contextual fallback
+        if sources:
+            return " | ".join(sources[:2])  # Limit to 2 sources
+        
+        # Final fallback with seasonal context
+        current_year = datetime.now().year
+        current_month = datetime.now().month
+        
+        if current_month <= 2:
+            return f"F1 {current_year} season starts March with pre-season testing"
+        elif current_month >= 12:
+            return f"F1 {current_year} season ending. Next season starts March {current_year + 1}"
+        else:
+            return f"F1 {current_year} season active. Check Formula1.com for live updates"
     
     def get_weather_data(self, query: str) -> Optional[str]:
         """Get weather data (placeholder - would need API key)"""
