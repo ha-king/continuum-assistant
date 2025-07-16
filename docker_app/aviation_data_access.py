@@ -154,13 +154,14 @@ class AviationDataAccess:
         current_time = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
         enhancements.append(f"CURRENT TIME: {current_time}")
         
-        # Flight tracking data
-        if any(word in query_lower for word in ['traffic', 'flights', 'aircraft', 'tracking', 'flight']):
-            flight_id = None
-            for word in query.split():
-                if len(word) >= 4 and word.upper().startswith('N'):
-                    flight_id = word.upper()
-                    break
+        # Flight tracking data - detect N-numbers anywhere in query
+        flight_id = None
+        for word in query.split():
+            if len(word) >= 4 and word.upper().startswith('N'):
+                flight_id = word.upper()
+                break
+        
+        if flight_id or any(word in query_lower for word in ['aircraft', 'flight', 'plane']):
             if flight_id:
                 position_data = self.get_flight_position(flight_id)
                 enhancements.append(f"FLIGHT POSITION: {position_data}")
