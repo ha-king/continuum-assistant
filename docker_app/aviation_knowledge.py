@@ -82,6 +82,33 @@ class AviationKnowledge:
         query_lower = query.lower()
         enhancements = []
         
+        # Check for aircraft nicknames/special aircraft
+        from aircraft_registry import get_registration
+        
+        # Look for keywords that might indicate special aircraft
+        special_keywords = ['jet', 'aircraft', 'plane', 'elonjet', 'elon']
+        if any(keyword in query_lower for keyword in special_keywords):
+            # Extract potential names (2-3 word phrases)
+            words = query_lower.split()
+            for i in range(len(words)):
+                # Try single word
+                potential_name = words[i]
+                reg = get_registration(potential_name)
+                
+                # Try two word phrase
+                if i < len(words) - 1:
+                    potential_name = f"{words[i]} {words[i+1]}"
+                    reg = get_registration(potential_name) or reg
+                
+                # Try three word phrase
+                if i < len(words) - 2:
+                    potential_name = f"{words[i]} {words[i+1]} {words[i+2]}"
+                    reg = get_registration(potential_name) or reg
+                
+                if reg:
+                    enhancements.append(f"SPECIAL AIRCRAFT: Registration {reg} found for query terms")
+                    break
+        
         # Check for aircraft types
         for category, aircraft_list in self.aircraft_types.items():
             for aircraft in aircraft_list:

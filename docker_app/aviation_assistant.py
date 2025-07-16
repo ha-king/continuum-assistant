@@ -6,6 +6,7 @@ Specialized assistant for aviation, flight data, and FAA information
 from strands import Agent, tool
 from aviation_data_access import enhance_query_with_aviation_data
 from aviation_knowledge import enhance_with_aviation_knowledge
+from aircraft_registry import get_registration
 from aviation_knowledge import enhance_with_aviation_knowledge
 from realtime_data_access import enhance_query_with_realtime
 
