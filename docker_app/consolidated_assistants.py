@@ -101,16 +101,8 @@ def research_assistant(query: str) -> str:
     """Handles research, web browsing, and data analysis with real-time internet access"""
     enhanced_query = enhance_query_with_realtime(query, "research")
     
-    system_prompt = """
-    You are a comprehensive research expert with ACTIVE real-time web access covering:
-    - Live internet research and current information gathering
-    - Real-time website analysis and company intelligence
-    - Current data analysis and predictive modeling
-    - Live public records and business research
-    
-    IMPORTANT: You have access to current web data and real-time information.
-    Always provide the most current and up-to-date information available.
-    """
+    base_prompt = "You are a comprehensive research expert with ACTIVE real-time data access for internet research, website analysis, and current information gathering."
+    system_prompt = inject_prediction_capability(make_data_aware(base_prompt, "live web data"))
     
     agent = Agent(system_prompt=system_prompt)
     return str(agent(enhanced_query))
