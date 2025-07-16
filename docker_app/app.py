@@ -376,43 +376,28 @@ for i, tab in enumerate(tabs):
                     query_context = f"User query at {get_current_datetime()}: {prompt}"
                     
                     if action == "teacher":
-                        # Handle direct time/date queries
-                        time_keywords = ['what time', 'what day', 'current time', 'current date', 'time is it', 'day is it']
-                        if any(keyword in prompt.lower() for keyword in time_keywords):
-                            content = f"It is {get_current_datetime()}"
-                        # Handle F1/Formula 1 queries - route to sports assistant
-                        elif any(word in prompt.lower() for word in ['f1', 'formula 1', 'formula one', 'grand prix', 'race', 'racing', 'motorsport']):
-                            # Force F1 assistant to acknowledge real-time data
-                            f1_enhanced_prompt = f"{datetime_context}IMPORTANT: You have access to live F1 data. Use the real-time race information provided above to make informed predictions and analysis.\n\n{prompt}"
-                            content = sports_assistant(f1_enhanced_prompt)
-                        # Handle aviation queries - route to aviation assistant
-                        elif any(word in prompt.lower() for word in ['aircraft', 'flight', 'airport', 'aviation', 'faa']) or any(word.upper().startswith('N') and len(word) >= 4 for word in prompt.split()):
-                            content = aviation_assistant(f"{datetime_context}{prompt}")
-                        # Handle crypto price queries - route to cryptocurrency assistant
-                        elif any(word in prompt.lower() for word in ['crypto', 'bitcoin', 'ethereum', 'apecoin', 'price', 'coinbase']):
-                            # Force financial assistant to use real-time data
-                            crypto_enhanced_prompt = f"{datetime_context}IMPORTANT: You have access to live crypto price data. Use the real-time market information provided above for accurate analysis.\n\n{prompt}"
-                            content = financial_assistant(crypto_enhanced_prompt)
-                        elif any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit', 'current', 'today', 'now', 'latest', 'real-time']) and not any(word.upper().startswith('N') and len(word) >= 4 for word in prompt.split()):
-                            try:
-                                # Try web browser first, fallback to research assistant
-                                if any(word in prompt.lower() for word in ['.com', 'website', 'browse', 'visit']):
-                                    content = web_browser_assistant(f"{datetime_context}{prompt}")
-                                else:
-                                    content = research_assistant(f"{datetime_context}{prompt}")
-                            except Exception as e:
-                                try:
-                                    content = research_assistant(f"{datetime_context}{prompt}")
-                                except:
-                                    response = teacher_agent(full_prompt)
-                                    content = str(response)
+                        from smart_router import smart_route
+                        
+                        # Smart routing with priority-based logic
+                        assistants = {
+                            'aviation': aviation_assistant,
+                            'sports': sports_assistant,
+                            'financial': financial_assistant,
+                            'web_browser': web_browser_assistant,
+                            'research': research_assistant
+                        }
+                        
+                        assistant_func, enhanced_prompt = smart_route(prompt, get_current_datetime(), assistants)
+                        
+                        if assistant_func:
+                            content = assistant_func(enhanced_prompt)
+                        elif enhanced_prompt:
+                            content = enhanced_prompt  # Direct response (like time queries)
                         else:
-                            # Recreate teacher agent with fresh datetime for each request
+                            # Default to teacher agent
                             teacher_agent = create_teacher_agent_with_datetime()
                             response = teacher_agent(full_prompt)
                             content = str(response)
-                            
-                            # Store knowledge from response
                             store_knowledge(content, query_context)
                     else:
                         if memory_backend == "OpenSearch Memory":
