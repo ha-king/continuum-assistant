@@ -18,6 +18,7 @@ from aws_assistant import aws_assistant
 from louisiana_legal_assistant import louisiana_legal_assistant
 from no_expertise import general_assistant
 from universal_assistant import universal_assistant
+from aviation_assistant import aviation_assistant
 # Legacy assistants (now consolidated)
 from web_browser_assistant import web_browser_assistant
 from utils.auth import Auth
@@ -91,6 +92,7 @@ AVAILABLE ASSISTANTS:
 - Research Assistant: internet research with real-time data access
 - Louisiana Legal Assistant: Louisiana business law
 - Web Browser Assistant: website browsing and analysis
+- Aviation Assistant: flight data, FAA information, air traffic
 - Universal Assistant: ANY topic with prediction/forecasting capabilities
 - General Assistant: other topics
 
@@ -317,6 +319,7 @@ if use_web_browser:
 if use_general:
     teacher_tools.append(general_assistant)
     teacher_tools.append(universal_assistant)  # Always include universal assistant
+    teacher_tools.append(aviation_assistant)  # Always include aviation assistant
 
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
