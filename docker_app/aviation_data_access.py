@@ -17,23 +17,22 @@ class AviationDataAccess:
         self.timeout = 10
         
     def get_flight_position(self, flight_id: str) -> str:
-        """Get flight position from free APIs"""
+        """Get flight position from multiple free APIs"""
+        # Try OpenSky Network (completely free)
         try:
-            # Try OpenSky Network (free, no key required)
             url = f"https://opensky-network.org/api/states/all?icao24={flight_id.lower()}"
             response = self.session.get(url, timeout=self.timeout)
-            
             if response.status_code == 200:
                 data = response.json()
                 if data and 'states' in data and data['states']:
                     state = data['states'][0]
-                    lat, lon, alt, speed = state[6], state[5], state[7], state[9]
+                    lat, lon, alt = state[6], state[5], state[7]
                     if lat and lon:
-                        return f"{flight_id}: Position {lat:.4f}, {lon:.4f} | Alt {alt}m | Speed {speed}m/s"
+                        return f"{flight_id}: Live position {lat:.4f}, {lon:.4f} at {alt}m altitude"
         except:
             pass
         
-        # Try alternative free API
+        # Try AviationStack free tier
         try:
             url = f"https://api.aviationstack.com/v1/flights?access_key=free&flight_iata={flight_id}"
             response = self.session.get(url, timeout=self.timeout)
@@ -42,11 +41,22 @@ class AviationDataAccess:
                 if data.get('data'):
                     flight = data['data'][0]
                     status = flight.get('flight_status', 'unknown')
-                    return f"{flight_id}: Status {status} | Check FlightAware.com/live/flight/{flight_id}"
+                    return f"{flight_id}: Flight status {status}"
         except:
             pass
         
-        return f"{flight_id}: Check FlightAware.com/live/flight/{flight_id} | FlightRadar24.com for live position"
+        # Try Aviation Edge free API
+        try:
+            url = f"https://aviation-edge.com/v2/public/flights?key=free&flightIata={flight_id}"
+            response = self.session.get(url, timeout=self.timeout)
+            if response.status_code == 200:
+                data = response.json()
+                if data:
+                    return f"{flight_id}: Check Aviation Edge for current status"
+        except:
+            pass
+        
+        return f"{flight_id}: Live tracking at FlightAware.com/live/flight/{flight_id} | FlightRadar24.com"
     
     def get_faa_data(self, data_type: str = "general") -> Optional[str]:
         """Get FAA data from catalog.data.faa.gov"""
