@@ -25,13 +25,15 @@ class AviationDataAccess:
                 'User-Agent': self.session.headers['User-Agent']
             }
             
-            url = f"https://api.flightradar24.com/common/v1/flight/list.json?query={flight_id}"
+            url = f"https://api.flightradar24.com/common/v1/flight/list.json?fetchBy=reg&query={flight_id}"
             response = self.session.get(url, headers=headers, timeout=self.timeout)
             
             if response.status_code == 200:
                 data = response.json()
                 if data and 'result' in data and 'response' in data['result']:
-                    flights = data['result']['response']['data']
+                    response_data = data['result']['response']
+                    flights = response_data.get('data')
+                    
                     if flights:
                         flight = flights[0]
                         lat = flight.get('lat')
@@ -41,8 +43,13 @@ class AviationDataAccess:
                         
                         if lat and lon:
                             return f"{flight_id}: Live at {lat:.4f}, {lon:.4f} | Alt: {alt}ft | Speed: {speed}kts"
-                        else:
-                            return f"{flight_id}: Aircraft not currently transmitting position data"
+                    
+                    # Aircraft exists but not flying
+                    aircraft_info = response_data.get('aircraftInfo', {})
+                    if aircraft_info:
+                        model = aircraft_info.get('model', {}).get('text', 'Unknown')
+                        owner = aircraft_info.get('airline', {}).get('name', 'Unknown')
+                        return f"{flight_id}: {model} ({owner}) - Currently on ground, not transmitting flight data"
         except Exception as e:
             pass
         
