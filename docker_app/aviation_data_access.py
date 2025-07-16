@@ -16,12 +16,27 @@ class AviationDataAccess:
         })
         self.timeout = 10
         
-    def get_flight_tracking_sources(self, flight_id: str = None) -> str:
-        """Get flight tracking from multiple sources"""
-        if flight_id:
-            return f"FlightAware: flightaware.com/live/flight/{flight_id} | FlightRadar24: flightradar24.com | TheAirTraffic: theairtraffic.com | ADS-B Exchange: adsbexchange.com"
-        else:
-            return "FlightAware: flightaware.com (enter N628TS) | FlightRadar24: flightradar24.com | TheAirTraffic: theairtraffic.com | ADS-B Exchange: adsbexchange.com"
+    def get_flight_position(self, flight_id: str) -> str:
+        """Get actual flight position data"""
+        try:
+            # Try ADS-B Exchange API (free, no key required)
+            url = f"https://adsbexchange.com/api/aircraft/json/{flight_id}"
+            response = self.session.get(url, timeout=self.timeout)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data and 'aircraft' in data and len(data['aircraft']) > 0:
+                    aircraft = data['aircraft'][0]
+                    lat = aircraft.get('lat', 'Unknown')
+                    lon = aircraft.get('lon', 'Unknown')
+                    alt = aircraft.get('alt_baro', 'Unknown')
+                    speed = aircraft.get('gs', 'Unknown')
+                    return f"{flight_id}: Lat {lat}, Lon {lon}, Alt {alt}ft, Speed {speed}kts"
+        except:
+            pass
+        
+        # Fallback to tracking sources
+        return f"{flight_id} tracking: FlightAware.com/live/flight/{flight_id} | FlightRadar24.com | ADS-B Exchange"
     
     def get_faa_data(self, data_type: str = "general") -> Optional[str]:
         """Get FAA data from catalog.data.faa.gov"""
@@ -126,8 +141,12 @@ class AviationDataAccess:
                 if len(word) >= 4 and word.upper().startswith('N'):
                     flight_id = word.upper()
                     break
-            tracking_data = self.get_flight_tracking_sources(flight_id)
-            enhancements.append(f"FLIGHT TRACKING: {tracking_data}")
+            if flight_id:
+                position_data = self.get_flight_position(flight_id)
+                enhancements.append(f"FLIGHT POSITION: {position_data}")
+            else:
+                tracking_data = "FlightAware.com | FlightRadar24.com | ADS-B Exchange"
+                enhancements.append(f"FLIGHT TRACKING: {tracking_data}")
         
         # Flight delays
         if any(word in query_lower for word in ['delay', 'delays', 'late', 'on-time']):
