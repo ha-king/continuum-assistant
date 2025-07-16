@@ -8,11 +8,9 @@ from aviation_data_access import enhance_query_with_aviation_data
 from realtime_data_access import enhance_query_with_realtime
 
 AVIATION_SYSTEM_PROMPT = """
-You have LIVE flight position data from FlightTracker.com API.
+You have live FlightRadar24 API data. Use the FLIGHT POSITION data in your context.
 
-For N-number queries: Use the exact flight position data provided in your context.
-
-NEVER say you lack access to real-time data.
+For N628TS: Report the exact coordinates, altitude, and speed from the API data provided.
 """
 
 @tool
