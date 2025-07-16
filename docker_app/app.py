@@ -378,10 +378,14 @@ for i, tab in enumerate(tabs):
                             content = f"It is {get_current_datetime()}"
                         # Handle F1/Formula 1 queries - route to sports assistant
                         elif any(word in prompt.lower() for word in ['f1', 'formula 1', 'formula one', 'grand prix', 'race', 'racing', 'motorsport']):
-                            content = sports_assistant(f"{datetime_context}{prompt}")
+                            # Force F1 assistant to acknowledge real-time data
+                            f1_enhanced_prompt = f"{datetime_context}IMPORTANT: You have access to live F1 data. Use the real-time race information provided above to make informed predictions and analysis.\n\n{prompt}"
+                            content = sports_assistant(f1_enhanced_prompt)
                         # Handle crypto price queries - route to cryptocurrency assistant
                         elif any(word in prompt.lower() for word in ['crypto', 'bitcoin', 'ethereum', 'apecoin', 'price', 'coinbase']):
-                            content = financial_assistant(f"{datetime_context}{prompt}")
+                            # Force financial assistant to use real-time data
+                            crypto_enhanced_prompt = f"{datetime_context}IMPORTANT: You have access to live crypto price data. Use the real-time market information provided above for accurate analysis.\n\n{prompt}"
+                            content = financial_assistant(crypto_enhanced_prompt)
                         elif any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit', 'current', 'today', 'now', 'latest', 'real-time']):
                             try:
                                 # Try web browser first, fallback to research assistant

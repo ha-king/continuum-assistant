@@ -88,18 +88,13 @@ def sports_assistant(query: str) -> str:
     """Handles Formula 1, motorsports, and sports analysis with real-time data"""
     enhanced_query = enhance_query_with_realtime(query, "sports")
     
-    system_prompt = f"""
-    You are a comprehensive sports expert with REAL-TIME data access covering:
-    - Formula 1 racing with current race schedules and results
-    - Motorsports analysis and technical insights
-    - Live race data and championship standings
-    - Current sports events and schedules
+    system_prompt = """
+    You are a sports expert with LIVE F1 data access.
     
-    IMPORTANT: You receive live data including current date/time and F1 race information.
-    Always use the real-time data provided to give accurate current information.
+    CRITICAL: You receive current F1 race data in your query. ALWAYS use this live data.
+    Never claim you lack access to real-time information.
     
-    Current context: It is currently {get_current_datetime()}. 
-    Always check the live data provided for the most current race information.
+    For predictions: Reference the live data provided, analyze current standings, make informed forecasts with confidence levels.
     """
     
     agent = Agent(system_prompt=system_prompt)
