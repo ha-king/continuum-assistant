@@ -17,26 +17,36 @@ class AviationDataAccess:
         self.timeout = 10
         
     def get_flight_position(self, flight_id: str) -> str:
-        """Get actual flight position data"""
+        """Get flight position from free APIs"""
         try:
-            # Try ADS-B Exchange API (free, no key required)
-            url = f"https://adsbexchange.com/api/aircraft/json/{flight_id}"
+            # Try OpenSky Network (free, no key required)
+            url = f"https://opensky-network.org/api/states/all?icao24={flight_id.lower()}"
             response = self.session.get(url, timeout=self.timeout)
             
             if response.status_code == 200:
                 data = response.json()
-                if data and 'aircraft' in data and len(data['aircraft']) > 0:
-                    aircraft = data['aircraft'][0]
-                    lat = aircraft.get('lat', 'Unknown')
-                    lon = aircraft.get('lon', 'Unknown')
-                    alt = aircraft.get('alt_baro', 'Unknown')
-                    speed = aircraft.get('gs', 'Unknown')
-                    return f"{flight_id}: Lat {lat}, Lon {lon}, Alt {alt}ft, Speed {speed}kts"
+                if data and 'states' in data and data['states']:
+                    state = data['states'][0]
+                    lat, lon, alt, speed = state[6], state[5], state[7], state[9]
+                    if lat and lon:
+                        return f"{flight_id}: Position {lat:.4f}, {lon:.4f} | Alt {alt}m | Speed {speed}m/s"
         except:
             pass
         
-        # Fallback to tracking sources
-        return f"{flight_id} tracking: FlightAware.com/live/flight/{flight_id} | FlightRadar24.com | ADS-B Exchange"
+        # Try alternative free API
+        try:
+            url = f"https://api.aviationstack.com/v1/flights?access_key=free&flight_iata={flight_id}"
+            response = self.session.get(url, timeout=self.timeout)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('data'):
+                    flight = data['data'][0]
+                    status = flight.get('flight_status', 'unknown')
+                    return f"{flight_id}: Status {status} | Check FlightAware.com/live/flight/{flight_id}"
+        except:
+            pass
+        
+        return f"{flight_id}: Check FlightAware.com/live/flight/{flight_id} | FlightRadar24.com for live position"
     
     def get_faa_data(self, data_type: str = "general") -> Optional[str]:
         """Get FAA data from catalog.data.faa.gov"""
