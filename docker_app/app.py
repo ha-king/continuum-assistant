@@ -99,9 +99,10 @@ AVAILABLE ASSISTANTS:
 ROUTING RULES:
 1. For PREDICTION/FORECASTING queries (predict, forecast, will, future, next, expect), use Universal Assistant
 2. For F1/Formula 1/racing queries, use Sports Assistant
-3. For current/real-time queries, use Research or Web Browser assistants
-4. For topics without specific assistants, use Universal Assistant
-5. Route to most appropriate specialist assistant for known domains
+3. For AVIATION/FLIGHT queries (aircraft, flight, N-numbers, airport), use Aviation Assistant
+4. For current/real-time queries, use Research or Web Browser assistants
+5. For topics without specific assistants, use Universal Assistant
+6. Route to most appropriate specialist assistant for known domains
 
 The Universal Assistant can handle predictions for ANY topic using historical + real-time data.
 """
