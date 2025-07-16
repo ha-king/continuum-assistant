@@ -1,5 +1,6 @@
 from strands import Agent, tool
 from realtime_data_access import enhance_query_with_realtime, get_current_datetime
+from data_aware_prompts import make_data_aware, inject_prediction_capability
 from datetime import datetime
 import requests
 
@@ -88,14 +89,8 @@ def sports_assistant(query: str) -> str:
     """Handles Formula 1, motorsports, and sports analysis with real-time data"""
     enhanced_query = enhance_query_with_realtime(query, "sports")
     
-    system_prompt = """
-    You are a sports expert with LIVE F1 data access.
-    
-    CRITICAL: You receive current F1 race data in your query. ALWAYS use this live data.
-    Never claim you lack access to real-time information.
-    
-    For predictions: Reference the live data provided, analyze current standings, make informed forecasts with confidence levels.
-    """
+    base_prompt = "You are a comprehensive sports expert covering F1 racing, motorsports analysis, and championship standings."
+    system_prompt = inject_prediction_capability(make_data_aware(base_prompt, "live F1"))
     
     agent = Agent(system_prompt=system_prompt)
     return str(agent(enhanced_query))
