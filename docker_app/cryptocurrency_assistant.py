@@ -1,5 +1,5 @@
 from strands import Agent, tool
-from web_browser_assistant import web_browser_assistant
+from realtime_data_access import enhance_query_with_realtime
 
 CRYPTOCURRENCY_SYSTEM_PROMPT = """
 You are CryptocurrencyAssist, a specialized cryptocurrency expert. Your role is to:
@@ -38,32 +38,9 @@ def cryptocurrency_assistant(query: str) -> str:
     """
     try:
         print("Routed to Cryptocurrency Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "crypto")
         
-        formatted_query = f"Provide expert cryptocurrency analysis and guidance for: {query}"
-        
-        # Add web browsing for current data if needed
-
-        
-        if any(word in query.lower() for word in ['current', 'latest', 'today', 'recent', 'now']):
-
-        
-            try:
-
-        
-                web_data = web_browser_assistant(f"Current research data: {query}")
-
-        
-                formatted_query += f"\n\nCurrent data from web: {web_data}"
-
-        
-            except:
-
-        
-                pass
-
-        
-        
-
+        formatted_query = f"Provide expert cryptocurrency analysis and guidance for: {enhanced_query}"
         
         crypto_agent = Agent(
             system_prompt=CRYPTOCURRENCY_SYSTEM_PROMPT,

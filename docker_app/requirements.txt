@@ -10,3 +10,5 @@ streamlit
 streamlit-cognito-auth
 pytz
 schedule
+requests
+urllib3

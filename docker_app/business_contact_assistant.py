@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 import requests
 import re
 
@@ -43,6 +44,8 @@ def business_contact_assistant(query: str) -> str:
     """
     try:
         print("Routed to Business Contact Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "business_contact")
+
         
         contact_data = gather_business_contacts(query)
         

@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from datetime import datetime
 from web_browser_assistant import web_browser_assistant
 
@@ -48,6 +49,8 @@ def formula1_assistant(query: str) -> str:
     """
     try:
         print("Routed to Formula 1 Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "formula1")
+
         
         # Add current date context for race awareness
         current_date = datetime.now().strftime("%A, %B %d, %Y")

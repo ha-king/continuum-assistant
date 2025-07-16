@@ -1,17 +1,5 @@
 from strands import Agent, tool
-from datetime import datetime
-
-def get_realtime_context(query):
-    context = f"Current date/time: {datetime.now().strftime('%A, %B %d, %Y at %I:%M %p UTC')}\n"
-    if any(word in query.lower() for word in ['current', 'latest', 'today', 'now', 'price']):
-        try:
-            from web_browser_assistant import web_browser_assistant
-            web_data = web_browser_assistant(f"Current data: {query}")
-            if web_data and len(web_data) > 50:
-                context += f"Real-time data: {web_data[:200]}...\n"
-        except: pass
-    return f"{context}Query: {query}"
-from web_browser_assistant import web_browser_assistant
+from realtime_data_access import enhance_query_with_realtime
 from strands_tools import calculator
 import json
 
@@ -56,7 +44,9 @@ def math_assistant(query: str) -> str:
     
     try:
         print("Routed to Math Assistant")
-        query = get_realtime_context(query)
+        enhanced_query = enhance_query_with_realtime(query, "math")
+        formatted_query = f"Please solve the following mathematical problem, showing all steps and explaining concepts clearly: {enhanced_query}"
+        
         # Create the math agent with calculator capability
         math_agent = Agent(
             system_prompt=MATH_ASSISTANT_SYSTEM_PROMPT,

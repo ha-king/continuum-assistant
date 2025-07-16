@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 
 INTERNATIONAL_FINANCE_SYSTEM_PROMPT = """
 You are InternationalFinanceExpert, a specialized assistant for global finance and international monetary systems.
@@ -47,6 +48,8 @@ def international_finance_assistant(query: str) -> str:
     """
     try:
         print("Routed to International Finance Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "international_finance")
+
         
         finance_framework = generate_finance_framework(query)
         

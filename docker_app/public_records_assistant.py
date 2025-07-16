@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 
 PUBLIC_RECORDS_SYSTEM_PROMPT = """
 You are PublicRecordsAssist, a specialized assistant for public records research and legal compliance.
@@ -41,6 +42,8 @@ def public_records_assistant(query: str) -> str:
     """
     try:
         print("Routed to Public Records Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "public_records")
+
         
         records_guidance = generate_records_guidance(query)
         

@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from web_browser_assistant import web_browser_assistant
 
 TOKENOMICS_SYSTEM_PROMPT = """
@@ -38,8 +39,10 @@ def tokenomics_assistant(query: str) -> str:
     """
     try:
         print("Routed to Tokenomics Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "tokenomics")
+
         
-        formatted_query = f"Provide expert tokenomics analysis and guidance for: {query}"
+        formatted_query = f"Provide expert tokenomics analysis and guidance for: {enhanced_query}"
         
         # Add web browsing for current data if needed
 

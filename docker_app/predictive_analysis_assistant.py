@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 
 PREDICTIVE_ANALYSIS_SYSTEM_PROMPT = """
 You are PredictiveAnalysisExpert, a specialized assistant for forecasting and predictive modeling.
@@ -47,6 +48,8 @@ def predictive_analysis_assistant(query: str) -> str:
     """
     try:
         print("Routed to Predictive Analysis Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "predictive_analysis")
+
         
         analysis_framework = generate_predictive_framework(query)
         

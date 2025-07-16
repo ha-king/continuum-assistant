@@ -1,17 +1,5 @@
 from strands import Agent, tool
-from datetime import datetime
-
-def get_realtime_context(query):
-    context = f"Current date/time: {datetime.now().strftime('%A, %B %d, %Y at %I:%M %p UTC')}\n"
-    if any(word in query.lower() for word in ['current', 'latest', 'today', 'now']):
-        try:
-            from research_assistant import research_assistant
-            web_data = research_assistant(f"Current information: {query}")
-            if web_data and len(web_data) > 50:
-                context += f"Real-time data: {web_data[:200]}...\n"
-        except: pass
-    return f"{context}Query: {query}"
-from web_browser_assistant import web_browser_assistant
+from realtime_data_access import enhance_query_with_realtime
 from strands_tools import file_read, file_write, editor
 import json
 
@@ -57,8 +45,9 @@ def english_assistant(query: str) -> str:
     
     try:
         print("Routed to English Assistant")
-        query = get_realtime_context(query)
-
+        enhanced_query = enhance_query_with_realtime(query, "english")
+        formatted_query = f"Analyze and respond to this English language or literature question, providing clear explanations with examples where appropriate: {enhanced_query}"
+        
         english_agent = Agent(
             system_prompt=ENGLISH_ASSISTANT_SYSTEM_PROMPT,
             tools=[editor, file_read, file_write],

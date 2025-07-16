@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from web_browser_assistant import web_browser_assistant
 
 WEB3_SYSTEM_PROMPT = """
@@ -38,8 +39,10 @@ def web3_assistant(query: str) -> str:
     """
     try:
         print("Routed to Web3 Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "web3")
+
         
-        formatted_query = f"Provide expert Web3 technology analysis and guidance for: {query}"
+        formatted_query = f"Provide expert Web3 technology analysis and guidance for: {enhanced_query}"
         
         # Add web browsing for current data if needed
 

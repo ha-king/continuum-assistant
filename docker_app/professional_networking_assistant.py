@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 
 PROFESSIONAL_NETWORKING_SYSTEM_PROMPT = """
 You are ProfessionalNetworkingAssist, a specialized assistant for business networking and professional relationship building.
@@ -41,6 +42,8 @@ def professional_networking_assistant(query: str) -> str:
     """
     try:
         print("Routed to Professional Networking Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "professional_networking")
+
         
         networking_guidance = generate_networking_guidance(query)
         

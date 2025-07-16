@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 import requests
 
 COMPANY_INTELLIGENCE_SYSTEM_PROMPT = """
@@ -42,6 +43,8 @@ def company_intelligence_assistant(query: str) -> str:
     """
     try:
         print("Routed to Company Intelligence Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "company_intelligence")
+
         
         intelligence_data = gather_company_intelligence(query)
         

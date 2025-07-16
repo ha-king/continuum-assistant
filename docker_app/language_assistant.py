@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from web_browser_assistant import web_browser_assistant
 from strands_tools import http_request
 import json
@@ -45,6 +46,8 @@ def language_assistant(query: str) -> str:
     
     try:
         print("Routed to Language Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "language")
+
         language_agent = Agent(
             system_prompt=LANGUAGE_ASSISTANT_SYSTEM_PROMPT,
             tools=[http_request],

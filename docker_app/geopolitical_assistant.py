@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 
 GEOPOLITICAL_SYSTEM_PROMPT = """
 You are GeopoliticalExpert, a specialized assistant for geopolitical analysis and international relations.
@@ -41,6 +42,8 @@ def geopolitical_assistant(query: str) -> str:
     """
     try:
         print("Routed to Geopolitical Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "geopolitical")
+
         
         analysis_framework = generate_geopolitical_framework(query)
         

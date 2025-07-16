@@ -1,5 +1,5 @@
 from strands import Agent, tool
-from web_browser_assistant import web_browser_assistant
+from realtime_data_access import enhance_query_with_realtime
 import requests
 import urllib.parse
 import json
@@ -46,12 +46,13 @@ def research_assistant(query: str) -> str:
     """
     try:
         print("Routed to Research Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "research")
         
-        # Gather research data
+        # Gather additional research data
         search_results = perform_active_web_search(query)
         
         # Format query for the research agent
-        formatted_query = f"Research this query and provide comprehensive findings with sources: {query}\n\nSearch Results: {search_results}"
+        formatted_query = f"Research this query and provide comprehensive findings with sources: {enhanced_query}\n\nAdditional Search Results: {search_results}"
         
         # Create research agent
         research_agent = Agent(

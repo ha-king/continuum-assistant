@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 import requests
 import urllib.parse
 import json
@@ -45,12 +46,13 @@ def web_browser_assistant(query: str) -> str:
     """
     try:
         print("Routed to Web Browser Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "web")
         
-        # Gather website intelligence
+        # Gather additional website intelligence
         company_intelligence = gather_company_intelligence(query)
         
         # Format query for the web browser agent
-        formatted_query = f"Analyze this website data and provide comprehensive insights about the company's offerings and services: {query}\n\nWebsite Data: {company_intelligence}"
+        formatted_query = f"Analyze this website data and provide comprehensive insights about the company's offerings and services: {enhanced_query}\n\nAdditional Website Data: {company_intelligence}"
         
         # Create web browser agent
         web_agent = Agent(

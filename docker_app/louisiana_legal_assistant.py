@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from datetime import datetime
 
 def get_realtime_context(query):
@@ -58,6 +59,8 @@ def louisiana_legal_assistant(query: str) -> str:
     """
     try:
         print("Routed to Louisiana Legal Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "louisiana_legal")
+
         query = get_realtime_context(query)
         
         # Get Louisiana-specific legal information
