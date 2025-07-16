@@ -17,30 +17,32 @@ class AviationDataAccess:
         self.timeout = 10
         
     def get_flight_position(self, flight_id: str) -> str:
-        """Get flight position using FlightTracker.com API"""
+        """Get flight position using FlightRadar24 API"""
         try:
-            # FlightTracker.com API with subscription token
+            # FlightRadar24 API with subscription token
             headers = {
                 'Authorization': 'Bearer 01981447-c495-7316-9e89-b80e093ce36f|ulLVgaAyQqtht8XgDvdO1B33qn6BCATR9TbQ3wU26924946e',
                 'User-Agent': self.session.headers['User-Agent']
             }
             
-            url = f"https://api.flighttracker.com/v1/aircraft/{flight_id}"
+            url = f"https://api.flightradar24.com/common/v1/flight/list.json?query={flight_id}"
             response = self.session.get(url, headers=headers, timeout=self.timeout)
             
             if response.status_code == 200:
                 data = response.json()
-                if data:
-                    lat = data.get('latitude')
-                    lon = data.get('longitude')
-                    alt = data.get('altitude')
-                    speed = data.get('ground_speed')
-                    status = data.get('status', 'unknown')
-                    
-                    if lat and lon:
-                        return f"{flight_id}: Live at {lat:.4f}, {lon:.4f} | Alt: {alt}ft | Speed: {speed}kts | Status: {status}"
-                    else:
-                        return f"{flight_id}: Status {status} - aircraft may be on ground or not transmitting"
+                if data and 'result' in data and 'response' in data['result']:
+                    flights = data['result']['response']['data']
+                    if flights:
+                        flight = flights[0]
+                        lat = flight.get('lat')
+                        lon = flight.get('lon') 
+                        alt = flight.get('alt')
+                        speed = flight.get('spd')
+                        
+                        if lat and lon:
+                            return f"{flight_id}: Live at {lat:.4f}, {lon:.4f} | Alt: {alt}ft | Speed: {speed}kts"
+                        else:
+                            return f"{flight_id}: Aircraft not currently transmitting position data"
         except Exception as e:
             pass
         
