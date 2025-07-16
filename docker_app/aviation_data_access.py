@@ -16,24 +16,12 @@ class AviationDataAccess:
         })
         self.timeout = 10
         
-    def get_air_traffic_data(self) -> Optional[str]:
-        """Get current air traffic data from theairtraffic.com"""
-        try:
-            # Try to get general air traffic information
-            url = "https://theairtraffic.com/api/flights"
-            response = self.session.get(url, timeout=self.timeout)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list) and len(data) > 0:
-                    active_flights = len(data)
-                    return f"Active flights: {active_flights} aircraft currently tracked"
-            
-            # Fallback to general air traffic status
-            return "Air traffic: Check theairtraffic.com for live flight tracking"
-            
-        except Exception as e:
-            return "Air traffic data: Check flight tracking services for current status"
+    def get_flight_tracking_sources(self, flight_id: str = None) -> str:
+        """Get flight tracking from multiple sources"""
+        if flight_id:
+            return f"FlightAware: flightaware.com/live/flight/{flight_id} | FlightRadar24: flightradar24.com | TheAirTraffic: theairtraffic.com | ADS-B Exchange: adsbexchange.com"
+        else:
+            return "FlightAware: flightaware.com (enter N628TS) | FlightRadar24: flightradar24.com | TheAirTraffic: theairtraffic.com | ADS-B Exchange: adsbexchange.com"
     
     def get_faa_data(self, data_type: str = "general") -> Optional[str]:
         """Get FAA data from catalog.data.faa.gov"""
@@ -131,10 +119,15 @@ class AviationDataAccess:
         current_time = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
         enhancements.append(f"CURRENT TIME: {current_time}")
         
-        # Air traffic data
-        if any(word in query_lower for word in ['traffic', 'flights', 'aircraft', 'tracking']):
-            traffic_data = self.get_air_traffic_data()
-            enhancements.append(f"AIR TRAFFIC: {traffic_data}")
+        # Flight tracking data
+        if any(word in query_lower for word in ['traffic', 'flights', 'aircraft', 'tracking', 'flight']):
+            flight_id = None
+            for word in query.split():
+                if len(word) >= 4 and word.upper().startswith('N'):
+                    flight_id = word.upper()
+                    break
+            tracking_data = self.get_flight_tracking_sources(flight_id)
+            enhancements.append(f"FLIGHT TRACKING: {tracking_data}")
         
         # Flight delays
         if any(word in query_lower for word in ['delay', 'delays', 'late', 'on-time']):
@@ -177,9 +170,9 @@ if __name__ == "__main__":
     print("Testing Aviation Data Access...")
     print("=" * 50)
     
-    # Test air traffic data
-    traffic = aviation_data.get_air_traffic_data()
-    print(f"Air Traffic: {traffic}")
+    # Test flight tracking sources
+    tracking = aviation_data.get_flight_tracking_sources("N628TS")
+    print(f"Flight Tracking: {tracking}")
     
     # Test flight delays
     delays = aviation_data.get_flight_delays()

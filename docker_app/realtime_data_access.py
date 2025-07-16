@@ -73,7 +73,7 @@ class RealTimeDataAccess:
         if any(word in query_lower for word in ['flight', 'airport', 'aviation', 'faa', 'aircraft', 'delay', 'air traffic']):
             try:
                 from aviation_data_access import aviation_data
-                aviation_info = aviation_data.get_air_traffic_data()
+                aviation_info = aviation_data.get_flight_tracking_sources()
                 if aviation_info:
                     data_parts.append(f"AVIATION: {aviation_info}")
             except:
