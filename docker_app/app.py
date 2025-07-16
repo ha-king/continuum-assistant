@@ -17,6 +17,7 @@ from math_assistant import math_assistant
 from aws_assistant import aws_assistant
 from louisiana_legal_assistant import louisiana_legal_assistant
 from no_expertise import general_assistant
+from universal_assistant import universal_assistant
 # Legacy assistants (now consolidated)
 from web_browser_assistant import web_browser_assistant
 from utils.auth import Auth
@@ -76,7 +77,7 @@ def get_user_context():
     return context + "\n"
 
 TEACHER_SYSTEM_PROMPT = """
-You are TeachAssist, an AI orchestrator with real-time data access.
+You are TeachAssist, an AI orchestrator with real-time data access and PREDICTION capabilities.
 
 AVAILABLE ASSISTANTS:
 - Math Assistant: calculations and mathematical problems
@@ -90,11 +91,17 @@ AVAILABLE ASSISTANTS:
 - Research Assistant: internet research with real-time data access
 - Louisiana Legal Assistant: Louisiana business law
 - Web Browser Assistant: website browsing and analysis
+- Universal Assistant: ANY topic with prediction/forecasting capabilities
 - General Assistant: other topics
 
-Route queries to the most appropriate assistant based on the topic.
-For F1/Formula 1/racing queries, use Sports Assistant.
-For current/real-time queries, use Research or Web Browser assistants.
+ROUTING RULES:
+1. For PREDICTION/FORECASTING queries (predict, forecast, will, future, next, expect), use Universal Assistant
+2. For F1/Formula 1/racing queries, use Sports Assistant
+3. For current/real-time queries, use Research or Web Browser assistants
+4. For topics without specific assistants, use Universal Assistant
+5. Route to most appropriate specialist assistant for known domains
+
+The Universal Assistant can handle predictions for ANY topic using historical + real-time data.
 """
 
 def determine_action(agent, query):
@@ -309,6 +316,7 @@ if use_web_browser:
     teacher_tools.append(web_browser_assistant)
 if use_general:
     teacher_tools.append(general_assistant)
+    teacher_tools.append(universal_assistant)  # Always include universal assistant
 
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
