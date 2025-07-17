@@ -163,13 +163,47 @@ class AircraftRegistry:
     def _search_adsbexchange(self, query: str) -> Optional[str]:
         """Search ADS-B Exchange for aircraft"""
         try:
-            # This would use ADS-B Exchange API if available
-            # For now, we'll use a pattern matching approach for common aircraft
-            if "elon" in query.lower() or "musk" in query.lower() or "elonjet" in query.lower():
-                return "N628TS"  # This is public knowledge
+            # Use ADS-B Exchange API to search for aircraft
+            # This would be a real API call in production
+            url = f"https://adsbexchange-api.example.com/v2/registration/{query}"
+            
+            # In a real implementation, this would make an actual API call
+            # For now, we'll use the knowledge base lookup instead
+            return self._search_knowledge_base(query)
         except:
             pass
         
+        return None
+        
+    def _search_knowledge_base(self, query: str) -> Optional[str]:
+        """Search knowledge base for aircraft information"""
+        try:
+            # In a real implementation, this would query a knowledge base
+            # that stores previously discovered aircraft information
+            from strands import Agent
+            from strands_tools import memory, use_llm
+            
+            # Create agent with memory access
+            agent = Agent(tools=[memory, use_llm])
+            
+            # Query the knowledge base
+            kb_results = agent.tool.memory(
+                action="retrieve",
+                query=f"aircraft registration for {query}",
+                min_score=0.7,
+                max_results=1
+            )
+            
+            # Extract registration from results if found
+            if kb_results:
+                # Parse the result to find N-number pattern
+                import re
+                matches = re.findall(r'[N][0-9]{1,5}[A-Z]{0,2}', str(kb_results))
+                if matches:
+                    return matches[0]
+        except:
+            pass
+            
         return None
     
     def get_registration_by_nickname(self, nickname: str) -> Optional[str]:

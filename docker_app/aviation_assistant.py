@@ -8,6 +8,7 @@ from aviation_data_access import enhance_query_with_aviation_data
 from aviation_knowledge import enhance_with_aviation_knowledge
 from aircraft_registry import get_registration
 from aircraft_web_search import search_aircraft
+from aircraft_learning import learn_from_interaction, get_learned_registration
 from aviation_knowledge import enhance_with_aviation_knowledge
 from realtime_data_access import enhance_query_with_realtime
 
@@ -89,7 +90,12 @@ def aviation_assistant(query: str) -> str:
         agent_response = aviation_agent(fully_enhanced)
         text_response = str(agent_response)
 
+        # Learn from this interaction
         if len(text_response) > 0:
+            try:
+                learn_from_interaction(query, text_response)
+            except:
+                pass
             return text_response
         
         return "Unable to process the aviation query. Please provide more specific details."
