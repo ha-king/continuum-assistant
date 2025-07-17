@@ -2,6 +2,7 @@ import streamlit as st
 import os
 from strands import Agent
 from strands_tools import file_read, file_write, editor, use_llm, memory, mem0_memory
+from model_options import get_model_options, get_default_model
 from auto_learning_system import initialize_auto_learning, trigger_manual_learning
 from enhanced_learning_system import initialize_enhanced_learning, trigger_enhanced_learning
 from personalized_intelligence import get_personalized_response, get_user_insights
@@ -19,6 +20,7 @@ from louisiana_legal_assistant import louisiana_legal_assistant
 from no_expertise import general_assistant
 from universal_assistant import universal_assistant
 from aviation_assistant import aviation_assistant
+from claude_aviation_assistant import aviation_assistant_claude
 # Legacy assistants (now consolidated)
 from web_browser_assistant import web_browser_assistant
 from utils.auth import Auth
@@ -228,14 +230,8 @@ with st.sidebar:
     
     st.header("Configuration")
     
-    model_options = [
-        "us.amazon.nova-pro-v1:0",
-        "us.amazon.nova-lite-v1:0", 
-        "us.amazon.nova-micro-v1:0",
-        "anthropic.claude-3-5-haiku-20241022-v1:0",
-        "anthropic.claude-3-5-sonnet-20241022-v1:0",
-        "anthropic.claude-3-opus-20240229-v1:0"
-    ]
+    # Get model options from centralized configuration
+    model_options = get_model_options()
     selected_model = st.selectbox("Bedrock Model:", model_options)
     
     opensearch_available = bool(os.environ.get("OPENSEARCH_HOST"))
@@ -379,8 +375,11 @@ for i, tab in enumerate(tabs):
                         from smart_router import smart_route
                         
                         # Smart routing with priority-based logic
+                        # Use Claude 4.0 for aviation if selected
+                        use_claude = selected_model == "anthropic.claude-4-0:0"
+                        
                         assistants = {
-                            'aviation': aviation_assistant,
+                            'aviation': aviation_assistant_claude if use_claude else aviation_assistant,
                             'sports': sports_assistant,
                             'financial': financial_assistant,
                             'web_browser': web_browser_assistant,
