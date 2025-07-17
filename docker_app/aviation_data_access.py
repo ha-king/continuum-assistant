@@ -167,10 +167,41 @@ class AviationDataAccess:
         
         # Flight tracking data - detect N-numbers anywhere in query
         flight_id = None
+        
+        # Check for N-numbers first
         for word in query.split():
             if len(word) >= 4 and word.upper().startswith('N'):
                 flight_id = word.upper()
                 break
+                
+        # If no N-number found, check for any aircraft names/identifiers
+        if not flight_id:
+            try:
+                from aircraft_registry import get_registration
+                # Try the full query and word combinations
+                special_reg = get_registration(query_lower)
+                
+                # If that fails, try individual words and pairs
+                if not special_reg:
+                    words = query_lower.split()
+                    for i in range(len(words)):
+                        # Try single words that might be aircraft identifiers
+                        if len(words[i]) >= 3:  # Minimum meaningful length
+                            special_reg = get_registration(words[i])
+                            if special_reg:
+                                break
+                                
+                        # Try word pairs
+                        if i < len(words) - 1:
+                            word_pair = f"{words[i]} {words[i+1]}"
+                            special_reg = get_registration(word_pair)
+                            if special_reg:
+                                break
+                
+                if special_reg:
+                    flight_id = special_reg
+            except:
+                pass
         
         if flight_id or any(word in query_lower for word in ['aircraft', 'flight', 'plane']):
             if flight_id:
