@@ -20,10 +20,18 @@ All assistants in the Continuum Assistant project now have comprehensive real-ti
 - **Real-time market analysis** capabilities
 
 #### Sports & F1 Data
-- **Ergast API** for Formula 1 race schedules and results
-- **Current race information** and championship standings
-- **Live race weekend data** and session information
+- **OpenF1 API** for comprehensive F1 data access including:
+  - Live timing data during active sessions
+  - Current driver and team information
+  - Race and qualifying results
+  - Session information and status
+- **Ergast API** for Formula 1 race schedules, results, and detailed session information
+- **ESPN F1 API** for current race information and live updates
+- **Current race information** including practice, qualifying, and sprint sessions
+- **Complete championship standings** for drivers and constructors
+- **Live race weekend data** with detailed session timing
 - **Historical F1 statistics** and performance data
+- **Circuit information** and track characteristics
 
 #### Web & Company Intelligence
 - **Real-time website analysis** and company information
@@ -53,11 +61,25 @@ All assistants in the Continuum Assistant project now have comprehensive real-ti
 - Real-time economic analysis
 - Up-to-date market trends
 
-**Sports Assistant (F1)**
-- Current race schedules and results
-- Live championship standings
-- Real-time race weekend information
-- Current season context
+**Formula 1 Assistant**
+- Multi-source F1 data integration for comprehensive coverage:
+  - OpenF1 API: Live timing data, session information, and detailed race metrics
+  - Ergast API: Championship standings, race schedules, and historical results
+  - ESPN F1 API: Latest news, event schedules, and live updates
+  - Web browsing: Real-time race information and current events
+- Enhanced F1 data capabilities:
+  - Live timing data during active sessions with position, lap times, and gaps
+  - Current driver and team information with accurate lineup data
+  - Race and qualifying results with detailed performance metrics
+  - Complete F1 calendar with race schedule and circuit information
+  - Session status and information for all race weekends
+  - Latest F1 news and updates from official sources
+- Current race schedules and detailed session information
+- Live championship standings for drivers and constructors
+- Real-time race weekend information including practice, qualifying, and sprint sessions
+- Current season context with team and driver performance analysis
+- Technical insights on car development and regulations
+- Historical race data and circuit characteristics
 
 **Research Assistant**
 - Live internet research capabilities
@@ -144,8 +166,12 @@ Response: Real-time price data with current market analysis
 ### F1 Racing Queries
 ```
 User: "What's the next F1 race?"
-Enhanced: Includes current race calendar, live schedule data
-Response: Next race details with current championship context
+Enhanced: Includes current race calendar, detailed session schedule, circuit information
+Response: Comprehensive next race details with all session times and current championship context
+
+User: "Who's leading the F1 championship?"
+Enhanced: Includes current driver and constructor standings with points
+Response: Detailed championship analysis with current standings and performance trends
 ```
 
 ### Business Intelligence
