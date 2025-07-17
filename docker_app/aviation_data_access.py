@@ -177,36 +177,51 @@ class AviationDataAccess:
         # If no N-number found, check for any aircraft names/identifiers
         if not flight_id:
             try:
-                # First try learned registrations
-                from aircraft_learning import get_learned_registration
-                learned_reg = get_learned_registration(query_lower)
-                if learned_reg:
-                    flight_id = learned_reg
-                else:
-                    # Fall back to registry lookup
-                    from aircraft_registry import get_registration
-                    # Try the full query and word combinations
-                    special_reg = get_registration(query_lower)
-                    
-                    # If that fails, try individual words and pairs
-                    if not special_reg:
-                        words = query_lower.split()
-                        for i in range(len(words)):
-                            # Try single words that might be aircraft identifiers
-                            if len(words[i]) >= 3:  # Minimum meaningful length
-                                special_reg = get_registration(words[i])
-                                if special_reg:
-                                    break
-                                    
-                            # Try word pairs
-                            if i < len(words) - 1:
-                                word_pair = f"{words[i]} {words[i+1]}"
-                                special_reg = get_registration(word_pair)
-                                if special_reg:
-                                    break
-                    
-                    if special_reg:
-                        flight_id = special_reg
+                # First check shared knowledge base
+                from shared_knowledge import retrieve_knowledge
+                
+                # Try to find registration in shared knowledge
+                kb_result = retrieve_knowledge(query_lower)
+                if kb_result:
+                    # Extract N-number from knowledge base result
+                    import re
+                    kb_data = kb_result.get('data', '')
+                    if isinstance(kb_data, str):
+                        reg_matches = re.findall(r'[N][0-9]{1,5}[A-Z]{0,2}', kb_data)
+                        if reg_matches:
+                            flight_id = reg_matches[0]
+                
+                # If not found in KB, try learned registrations
+                if not flight_id:
+                    from aircraft_learning import get_learned_registration
+                    learned_reg = get_learned_registration(query_lower)
+                    if learned_reg:
+                        flight_id = learned_reg
+                    else:
+                        # Fall back to registry lookup
+                        from aircraft_registry import get_registration
+                        # Try the full query and word combinations
+                        special_reg = get_registration(query_lower)
+                        
+                        # If that fails, try individual words and pairs
+                        if not special_reg:
+                            words = query_lower.split()
+                            for i in range(len(words)):
+                                # Try single words that might be aircraft identifiers
+                                if len(words[i]) >= 3:  # Minimum meaningful length
+                                    special_reg = get_registration(words[i])
+                                    if special_reg:
+                                        break
+                                        
+                                # Try word pairs
+                                if i < len(words) - 1:
+                                    word_pair = f"{words[i]} {words[i+1]}"
+                                    special_reg = get_registration(word_pair)
+                                    if special_reg:
+                                        break
+                        
+                        if special_reg:
+                            flight_id = special_reg
             except:
                 pass
         

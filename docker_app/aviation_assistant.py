@@ -9,6 +9,7 @@ from aviation_knowledge import enhance_with_aviation_knowledge
 from aircraft_registry import get_registration
 from aircraft_web_search import search_aircraft
 from aircraft_learning import learn_from_interaction, get_learned_registration
+from shared_knowledge import store_knowledge, retrieve_knowledge
 from aviation_knowledge import enhance_with_aviation_knowledge
 from realtime_data_access import enhance_query_with_realtime
 
@@ -90,10 +91,33 @@ def aviation_assistant(query: str) -> str:
         agent_response = aviation_agent(fully_enhanced)
         text_response = str(agent_response)
 
-        # Learn from this interaction
+        # Learn from this interaction and store in shared knowledge
         if len(text_response) > 0:
             try:
+                # Store in aircraft learning system
                 learn_from_interaction(query, text_response)
+                
+                # Store in shared knowledge system
+                store_knowledge(query, text_response, "aviation_assistant")
+                
+                # Extract specific topics from query
+                topics = []
+                query_lower = query.lower()
+                
+                # Check for aircraft registrations
+                import re
+                reg_matches = re.findall(r'[N][0-9]{1,5}[A-Z]{0,2}', query)
+                topics.extend(reg_matches)
+                
+                # Check for common aviation terms
+                aviation_terms = ["elonjet", "aircraft", "flight", "airport"]
+                for term in aviation_terms:
+                    if term in query_lower:
+                        topics.append(term)
+                
+                # Store knowledge for each topic
+                for topic in topics:
+                    store_knowledge(topic, text_response, "aviation_assistant")
             except:
                 pass
             return text_response
