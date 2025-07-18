@@ -21,9 +21,9 @@ def smart_route(prompt: str, datetime_context: str, assistants: dict) -> tuple:
         return assistants['aviation'], f"{datetime_context}{prompt}"
     
     # Priority 3: F1/Racing queries (specific domain)
-    if any(word in prompt_lower for word in ['f1', 'formula 1', 'formula one', 'grand prix', 'motorsport']):
+    if any(word in prompt_lower for word in ['f1', 'formula 1', 'formula one', 'grand prix', 'motorsport', 'racing']):
         enhanced_prompt = f"{datetime_context}IMPORTANT: You have access to live F1 data. Use the real-time race information provided above to make informed predictions and analysis.\n\n{prompt}"
-        return assistants['sports'], enhanced_prompt
+        return assistants['formula1'], enhanced_prompt
     
     # Priority 4: Crypto queries (specific financial domain)
     if any(word in prompt_lower for word in ['crypto', 'bitcoin', 'ethereum', 'apecoin', 'coinbase']):

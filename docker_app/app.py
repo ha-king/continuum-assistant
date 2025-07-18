@@ -12,6 +12,8 @@ from consolidated_assistants import (
     financial_assistant, security_assistant, business_assistant,
     tech_assistant, research_assistant, sports_assistant
 )
+# Formula 1 assistant
+from formula1_assistant import formula1_assistant
 # Core assistants
 from english_assistant import english_assistant
 from math_assistant import math_assistant
@@ -90,7 +92,8 @@ AVAILABLE ASSISTANTS:
 - Business Assistant: business development, networking, company intelligence
 - Tech Assistant: programming, AI, blockchain, web3
 - Security Assistant: cybersecurity, cryptography, threat analysis
-- Sports Assistant: Formula 1, motorsports, racing with real-time data
+- Formula 1 Assistant: F1 racing with live data from multiple sources (OpenF1, Ergast, ESPN)
+- Sports Assistant: general sports and motorsports
 - Research Assistant: internet research with real-time data access
 - Louisiana Legal Assistant: Louisiana business law
 - Web Browser Assistant: website browsing and analysis
@@ -100,7 +103,7 @@ AVAILABLE ASSISTANTS:
 
 ROUTING RULES:
 1. For PREDICTION/FORECASTING queries (predict, forecast, will, future, next, expect), use Universal Assistant
-2. For F1/Formula 1/racing queries, use Sports Assistant
+2. For F1/Formula 1/racing queries, use Formula 1 Assistant
 3. For AVIATION/FLIGHT queries (aircraft, flight, N628TS, N-numbers, airport, where is N), use Aviation Assistant
 4. For current/real-time queries, use Research or Web Browser assistants
 5. For topics without specific assistants, use Universal Assistant
@@ -305,8 +308,9 @@ if use_cs or use_ai or use_blockchain:
     teacher_tools.append(tech_assistant)
 if use_cybersec_defense:
     teacher_tools.append(security_assistant)
-# Always include sports assistant for F1 queries
+# Include sports assistant and formula1 assistant for F1 queries
 teacher_tools.append(sports_assistant)
+teacher_tools.append(formula1_assistant)  # Add Formula 1 assistant
 if use_research:
     teacher_tools.append(research_assistant)
 if use_louisiana_legal:
@@ -381,6 +385,7 @@ for i, tab in enumerate(tabs):
                         assistants = {
                             'aviation': aviation_assistant_claude if use_claude else aviation_assistant,
                             'sports': sports_assistant,
+                            'formula1': formula1_assistant,  # Add Formula 1 assistant
                             'financial': financial_assistant,
                             'web_browser': web_browser_assistant,
                             'research': research_assistant
