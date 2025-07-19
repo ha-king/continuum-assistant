@@ -414,9 +414,6 @@ for i, tab in enumerate(tabs):
                         
                         if assistant_func:
                             content = assistant_func(enhanced_prompt)
-                            # Clean the response to remove routing information
-                            from response_cleaner import clean_response
-                            content = clean_response(content)
                         elif enhanced_prompt:
                             content = enhanced_prompt  # Direct response (like time queries)
                         else:
@@ -447,8 +444,12 @@ for i, tab in enumerate(tabs):
                     # Apply personalization
                     personalized_content = get_personalized_response(user_id, prompt, content)
                     
-                    # Display personalized content
-                    st.markdown(personalized_content)
+                    # Clean the response to remove routing information
+                    from response_cleaner import clean_response
+                    cleaned_content = clean_response(personalized_content)
+                    
+                    # Display cleaned personalized content
+                    st.markdown(cleaned_content)
                     
                     # Add expandable reference section if references exist
                     if "**References Used:**" in content:
@@ -459,7 +460,7 @@ for i, tab in enumerate(tabs):
                                 st.markdown(references)
                                 st.markdown(f"**Assistant Used:** {action.title()} Mode")
                     
-                    st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": personalized_content})
+                    st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": cleaned_content})
                     
                     # Show user insights in sidebar
                     if user_id != 'anonymous':
