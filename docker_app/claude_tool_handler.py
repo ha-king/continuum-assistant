@@ -110,17 +110,57 @@ class ClaudeToolHandler:
         if not messages:
             return messages
             
-        # Collect all tool_use IDs from assistant messages
-        tool_use_ids = set()
-        for message in messages:
+        # Collect all tool_use IDs and their positions
+        tool_use_ids = {}
+        for i, message in enumerate(messages):
             if message.get('role') == 'assistant':
                 content = message.get('content', [])
                 if isinstance(content, list):
                     for item in content:
                         if isinstance(item, dict) and item.get('type') == 'tool_use':
-                            tool_use_ids.add(item.get('id'))
+                            tool_use_ids[item.get('id')] = i
         
-        # Filter out orphaned tool_results (those without matching tool_use)
+        # Check for missing tool_results after tool_use
+        for tool_id, pos in tool_use_ids.items():
+            # Check if there's a next message with tool_result
+            if pos + 1 < len(messages):
+                next_message = messages[pos + 1]
+                if next_message.get('role') == 'user':
+                    content = next_message.get('content', [])
+                    if isinstance(content, list):
+                        # Check if this tool_id has a matching tool_result
+                        has_matching_result = False
+                        for item in content:
+                            if isinstance(item, dict) and item.get('type') == 'tool_result' and item.get('tool_use_id') == tool_id:
+                                has_matching_result = True
+                                break
+                        
+                        # If no matching result, add a dummy tool_result
+                        if not has_matching_result:
+                            if isinstance(next_message['content'], list):
+                                next_message['content'].append({
+                                    'type': 'tool_result',
+                                    'tool_use_id': tool_id,
+                                    'content': {'result': 'No result available'}
+                                })
+                            else:
+                                next_message['content'] = [{
+                                    'type': 'tool_result',
+                                    'tool_use_id': tool_id,
+                                    'content': {'result': 'No result available'}
+                                }]
+            else:
+                # No next message, add one with tool_result
+                messages.append({
+                    'role': 'user',
+                    'content': [{
+                        'type': 'tool_result',
+                        'tool_use_id': tool_id,
+                        'content': {'result': 'No result available'}
+                    }]
+                })
+        
+        # Filter out orphaned tool_results
         fixed_messages = []
         for message in messages:
             if message.get('role') == 'user':
@@ -133,8 +173,6 @@ class ClaudeToolHandler:
                         if isinstance(item, dict) and item.get('type') == 'tool_result':
                             if item.get('tool_use_id') in tool_use_ids:
                                 fixed_content.append(item)
-                                # Remove from set to ensure 1:1 mapping
-                                tool_use_ids.discard(item.get('tool_use_id'))
                             else:
                                 has_orphaned_results = True
                         else:
