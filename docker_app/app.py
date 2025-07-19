@@ -87,6 +87,8 @@ def get_user_context():
     
     return context + "\n"
 
+from response_processor import process_response
+
 TEACHER_SYSTEM_PROMPT = """
 You are TeachAssist, an AI orchestrator with real-time data access and PREDICTION capabilities.
 
@@ -444,21 +446,12 @@ for i, tab in enumerate(tabs):
                     # Apply personalization
                     personalized_content = get_personalized_response(user_id, prompt, content)
                     
-                    # Clean the response to remove routing information
-                    try:
-                        from response_cleaner import clean_response
-                        cleaned_content = clean_response(personalized_content)
-                        
-                        # If cleaning removed too much content, use the original
-                        if len(cleaned_content) < len(personalized_content) * 0.5 and len(personalized_content) > 100:
-                            print(f"Warning: Response cleaner removed too much content. Using original response.")
-                            cleaned_content = personalized_content
-                    except Exception as e:
-                        print(f"Error in response cleaner: {str(e)}")
-                        cleaned_content = personalized_content
+                    # Process the response (clean and format)
+                    user_data = {"user_id": user_id, "location": st.session_state.get('user_location')}
+                    processed_content = process_response(personalized_content, prompt, user_data)
                     
-                    # Display cleaned personalized content
-                    st.markdown(cleaned_content)
+                    # Display processed content
+                    st.markdown(processed_content)
                     
                     # Add expandable reference section if references exist
                     if "**References Used:**" in content:
@@ -469,7 +462,7 @@ for i, tab in enumerate(tabs):
                                 st.markdown(references)
                                 st.markdown(f"**Assistant Used:** {action.title()} Mode")
                     
-                    st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": cleaned_content})
+                    st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": processed_content})
                     
                     # Show user insights in sidebar
                     if user_id != 'anonymous':
