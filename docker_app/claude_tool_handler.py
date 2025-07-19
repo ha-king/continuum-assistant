@@ -18,6 +18,9 @@ class ClaudeToolHandler:
     def handle_conversation(self, messages: List[Dict], tools: Optional[List[Dict]] = None) -> Dict:
         """Handle a complete conversation with tools"""
         try:
+            # Validate and fix conversation history before making request
+            messages = self._validate_conversation_history(messages)
+            
             # Make initial request
             response = self.bedrock.converse(
                 modelId=self.model_id,
@@ -35,6 +38,11 @@ class ClaudeToolHandler:
                 
                 # Add the assistant's tool request to conversation
                 messages.append({"role": "assistant", "content": response_message.get('content', [])})
+                
+                # Track tool_use_ids for this turn to ensure we don't create orphaned tool_results
+                current_tool_use_ids = set()
+                for tool_call in tool_calls:
+                    current_tool_use_ids.add(tool_call.get('id'))
                 
                 # For each tool call, execute and add results
                 for tool_call in tool_calls:
@@ -96,6 +104,59 @@ class ClaudeToolHandler:
                     tool_calls.append(item)
         
         return tool_calls
+    
+    def _validate_conversation_history(self, messages: List[Dict]) -> List[Dict]:
+        """Validate and fix conversation history to prevent ValidationException"""
+        if not messages:
+            return messages
+            
+        # Collect all tool_use IDs from assistant messages
+        tool_use_ids = set()
+        for message in messages:
+            if message.get('role') == 'assistant':
+                content = message.get('content', [])
+                if isinstance(content, list):
+                    for item in content:
+                        if isinstance(item, dict) and item.get('type') == 'tool_use':
+                            tool_use_ids.add(item.get('id'))
+        
+        # Filter out orphaned tool_results (those without matching tool_use)
+        fixed_messages = []
+        for message in messages:
+            if message.get('role') == 'user':
+                content = message.get('content', [])
+                if isinstance(content, list):
+                    fixed_content = []
+                    has_orphaned_results = False
+                    
+                    for item in content:
+                        if isinstance(item, dict) and item.get('type') == 'tool_result':
+                            if item.get('tool_use_id') in tool_use_ids:
+                                fixed_content.append(item)
+                                # Remove from set to ensure 1:1 mapping
+                                tool_use_ids.discard(item.get('tool_use_id'))
+                            else:
+                                has_orphaned_results = True
+                        else:
+                            fixed_content.append(item)
+                    
+                    if fixed_content or not has_orphaned_results:
+                        fixed_message = message.copy()
+                        fixed_message['content'] = fixed_content if fixed_content else "Continuing the conversation."
+                        fixed_messages.append(fixed_message)
+                    else:
+                        # If all content was removed and there were orphaned results,
+                        # add a simple continuation message
+                        fixed_messages.append({
+                            'role': 'user',
+                            'content': 'Continuing the conversation.'
+                        })
+                else:
+                    fixed_messages.append(message)
+            else:
+                fixed_messages.append(message)
+        
+        return fixed_messages
     
     def _execute_tool(self, tool_name: str, params: Dict) -> Dict:
         """Execute a tool and return the result"""
