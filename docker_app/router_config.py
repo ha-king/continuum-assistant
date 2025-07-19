@@ -10,7 +10,7 @@ DOMAINS = {
     "aviation": ["aircraft", "flight", "airport", "aviation", "faa", "plane", "pilot", "runway", "airline", "airways", "airspace", "atc", "cessna", "boeing", "airbus", "takeoff", "landing"],
     "formula1": ["f1", "formula 1", "formula one", "grand prix", "motorsport", "racing", "driver", "team", "lap", "circuit"],
     "financial": ["finance", "money", "invest", "stock", "market", "fund", "portfolio", "asset", "wealth"],
-    "crypto": ["crypto", "bitcoin", "ethereum", "blockchain", "token", "coin", "wallet", "mining", "nft"],
+    "crypto": ["crypto", "bitcoin", "ethereum", "blockchain", "token", "coin", "wallet", "mining", "nft", "cryptocurrency", "altcoin", "defi", "stablecoin", "exchange", "binance", "coinbase", "ledger", "satoshi", "hodl", "bull", "bear", "market", "trading", "btc", "eth"],
     "web": ["browse", "website", "url", "link", "internet", "web", "online", "site", ".com", ".org", ".net"],
     "research": ["research", "study", "analyze", "investigate", "examine", "explore", "search", "find"],
     "math": ["calculate", "equation", "formula", "math", "solve", "number", "arithmetic", "algebra", "geometry"],
@@ -156,8 +156,8 @@ ROUTING_RULES = [
     ("crypto", 
      lambda text: contains_keywords(text, "crypto"), 
      "financial", 
-     lambda text, datetime: f"{datetime}IMPORTANT: You have access to live crypto price data. Use the real-time market information provided above for accurate analysis.\n\n{text}", 
-     70),
+     lambda text, datetime: f"{datetime}IMPORTANT: You have access to live crypto price data. Use the real-time market information provided above for accurate analysis.\n\nFocus on cryptocurrency analysis and forecasting.\n\n{text}", 
+     75),
     
     # Financial queries
     ("financial", 

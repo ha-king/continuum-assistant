@@ -414,6 +414,9 @@ for i, tab in enumerate(tabs):
                         
                         if assistant_func:
                             content = assistant_func(enhanced_prompt)
+                            # Clean the response to remove routing information
+                            from response_cleaner import clean_response
+                            content = clean_response(content)
                         elif enhanced_prompt:
                             content = enhanced_prompt  # Direct response (like time queries)
                         else:

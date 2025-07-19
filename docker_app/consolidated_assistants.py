@@ -22,6 +22,14 @@ def financial_assistant(query: str) -> str:
     - Current financial market information  
     - Real-time economic analysis
     - Up-to-date market trends
+    - Predictive analysis and forecasting
+    
+    For cryptocurrency queries:
+    1. Analyze current market conditions using provided real-time data
+    2. Identify key market trends and patterns
+    3. Provide well-reasoned forecasts with confidence levels
+    4. Include risk assessments for any predictions
+    5. Avoid making exaggerated claims about returns
     
     Always use the real-time data provided to give accurate current information.
     """
