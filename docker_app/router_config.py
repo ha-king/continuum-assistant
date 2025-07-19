@@ -30,22 +30,50 @@ def is_n_number(word):
     # Must be at least 4 characters (N + at least 3 digits/letters)
     return bool(re.match(r'^N[0-9][0-9A-Z]{2,}$', word))
 
+# Precompiled regex patterns for keyword matching
+_DOMAIN_PATTERNS = {}
+
+def _initialize_patterns():
+    """Initialize precompiled regex patterns for all domains"""
+    global _DOMAIN_PATTERNS
+    if not _DOMAIN_PATTERNS:
+        for domain_name, keywords in DOMAINS.items():
+            _DOMAIN_PATTERNS[domain_name] = {
+                'single_words': set(),
+                'multi_words': []
+            }
+            
+            for keyword in keywords:
+                if ' ' not in keyword:
+                    _DOMAIN_PATTERNS[domain_name]['single_words'].add(keyword)
+                else:
+                    # Precompile regex for multi-word phrases
+                    pattern = re.compile(re.escape(keyword), re.IGNORECASE)
+                    _DOMAIN_PATTERNS[domain_name]['multi_words'].append(pattern)
+
+# Initialize patterns on module load
+_initialize_patterns()
+
 # Domain detection functions
 def contains_keywords(text, domain):
-    """Check if text contains any keywords for the specified domain"""
+    """Check if text contains any keywords for the specified domain (optimized)"""
     text_lower = text.lower()
-    words = set(re.findall(r'\b\w+\b', text_lower))  # Extract whole words
     
-    # Get keywords for the specified domain
-    keywords = DOMAINS.get(domain, [])
+    # Get patterns for the domain
+    patterns = _DOMAIN_PATTERNS.get(domain)
+    if not patterns:
+        return False
     
-    # Check for exact word matches
-    for keyword in keywords:
-        # For single-word keywords, check if they exist as whole words
-        if ' ' not in keyword and keyword in words:
-            return True
-        # For multi-word keywords, check if they exist as a phrase
-        elif ' ' in keyword and keyword in text_lower:
+    # Extract words only once
+    words = set(re.findall(r'\b\w+\b', text_lower))
+    
+    # Check single-word matches (fast set operation)
+    if any(word in patterns['single_words'] for word in words):
+        return True
+    
+    # Check multi-word patterns
+    for pattern in patterns['multi_words']:
+        if pattern.search(text_lower):
             return True
     
     return False

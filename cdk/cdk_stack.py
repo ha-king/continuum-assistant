@@ -1,3 +1,4 @@
+import json
 from aws_cdk import (
     # Duration,
     Stack,
@@ -39,10 +40,19 @@ class CdkStack(Stack):
                                                   generate_secret=True
                                                   )
 
-        # Import existing Cognito secret from Secrets Manager
-        secret = secretsmanager.Secret.from_secret_name_v2(
+        # Create or update Cognito secret in Secrets Manager
+        secret = secretsmanager.Secret(
             self, f"{prefix}ParamCognitoSecret",
-            secret_name=f"{Config.SECRETS_MANAGER_ID}-{env_name}"
+            secret_name=f"{Config.SECRETS_MANAGER_ID}-{env_name}",
+            description=f"Cognito credentials for {prefix} application",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                secret_string_template=json.dumps({
+                    "pool_id": user_pool.user_pool_id,
+                    "app_client_id": user_pool_client.user_pool_client_id,
+                    "app_client_secret": "placeholder"
+                }),
+                generate_string_key="app_client_secret"
+            )
         )
 
 

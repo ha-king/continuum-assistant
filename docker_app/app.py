@@ -7,24 +7,30 @@ from auto_learning_system import initialize_auto_learning, trigger_manual_learni
 from enhanced_learning_system import initialize_enhanced_learning, trigger_enhanced_learning
 from personalized_intelligence import get_personalized_response, get_user_insights
 from proactive_intelligence import initialize_proactive_intelligence, get_proactive_alerts, get_intelligence_brief, trigger_market_analysis
+# Import lazy loading wrapper
+from lazy_assistant import LazyAssistant
+
+# Lazy load assistants to improve startup time
 # Consolidated assistants
-from consolidated_assistants import (
-    financial_assistant, security_assistant, business_assistant,
-    tech_assistant, research_assistant, sports_assistant
-)
+financial_assistant = LazyAssistant('consolidated_assistants', 'financial_assistant')
+security_assistant = LazyAssistant('consolidated_assistants', 'security_assistant')
+business_assistant = LazyAssistant('consolidated_assistants', 'business_assistant')
+tech_assistant = LazyAssistant('consolidated_assistants', 'tech_assistant')
+research_assistant = LazyAssistant('consolidated_assistants', 'research_assistant')
+sports_assistant = LazyAssistant('consolidated_assistants', 'sports_assistant')
 # Formula 1 assistant
-from formula1_assistant import formula1_assistant
+formula1_assistant = LazyAssistant('formula1_assistant', 'formula1_assistant')
 # Core assistants
-from english_assistant import english_assistant
-from math_assistant import math_assistant
-from aws_assistant import aws_assistant
-from louisiana_legal_assistant import louisiana_legal_assistant
-from no_expertise import general_assistant
-from universal_assistant import universal_assistant
-from aviation_assistant import aviation_assistant
-from claude_aviation_assistant import aviation_assistant_claude
+english_assistant = LazyAssistant('english_assistant', 'english_assistant')
+math_assistant = LazyAssistant('math_assistant', 'math_assistant')
+aws_assistant = LazyAssistant('aws_assistant', 'aws_assistant')
+louisiana_legal_assistant = LazyAssistant('louisiana_legal_assistant', 'louisiana_legal_assistant')
+general_assistant = LazyAssistant('no_expertise', 'general_assistant')
+universal_assistant = LazyAssistant('universal_assistant', 'universal_assistant')
+aviation_assistant = LazyAssistant('aviation_assistant', 'aviation_assistant')
+aviation_assistant_claude = LazyAssistant('claude_aviation_assistant', 'aviation_assistant_claude')
 # Legacy assistants (now consolidated)
-from web_browser_assistant import web_browser_assistant
+web_browser_assistant = LazyAssistant('web_browser_assistant', 'web_browser_assistant')
 from utils.auth import Auth
 from config_file import Config
 
@@ -119,22 +125,11 @@ def determine_action(agent, query):
         return "knowledge"
     return "teacher"
 
+from batch_knowledge import store_knowledge_batch, flush_knowledge_queue
+
 def store_knowledge(content, query_context):
-    """Store non-redundant information in knowledge base"""
-    if not os.environ.get("KNOWLEDGE_BASE_ID"):
-        return
-    
-    try:
-        agent = Agent(tools=[memory, use_llm])
-        
-        # Check for existing similar content
-        existing = agent.tool.memory(action="retrieve", query=content[:100], min_score=0.8, max_results=3)
-        
-        # Only store if not redundant
-        if not existing or len(str(existing).strip()) < 50:
-            agent.tool.memory(action="store", content=f"{query_context}\nLearned: {content}")
-    except Exception:
-        pass
+    """Store non-redundant information in knowledge base using batch processing"""
+    store_knowledge_batch(content, query_context)
 
 def run_kb_agent(query, datetime_context):
     if not os.environ.get("KNOWLEDGE_BASE_ID"):
@@ -206,24 +201,48 @@ if 'user_timezone' not in st.session_state or 'user_location' not in st.session_
     st.session_state.user_timezone = 'UTC'
     st.session_state.user_location = None
 
-if "tab_ids" not in st.session_state:
-    st.session_state.tab_ids = [0]
-if "next_tab_id" not in st.session_state:
-    st.session_state.next_tab_id = 1
+def initialize_session_state():
+    """Initialize all session state variables in one place"""
+    if "tab_ids" not in st.session_state:
+        st.session_state.tab_ids = [0]
+    if "next_tab_id" not in st.session_state:
+        st.session_state.next_tab_id = 1
+    if "active_tab" not in st.session_state:
+        st.session_state.active_tab = 0
+    if "tab_messages" not in st.session_state:
+        st.session_state.tab_messages = {}
 
-col1, col2, col3 = st.columns([5, 1, 1])
+# Initialize session state
+initialize_session_state()
+
+col1, col2, col3, col4 = st.columns([5, 1, 1, 1])
 with col1:
     tab_names = [f"Chat {tid+1}" for tid in st.session_state.tab_ids]
     tabs = st.tabs(tab_names)
+    # Set active tab when clicked
+    for i, _ in enumerate(tabs):
+        if i < len(tab_names):
+            st.session_state.active_tab = i
 with col2:
     if st.button("+ Tab"):
         st.session_state.tab_ids.append(st.session_state.next_tab_id)
         st.session_state.next_tab_id += 1
+        st.session_state.active_tab = len(st.session_state.tab_ids) - 1
         st.rerun()
 with col3:
     if st.button("✕ Close") and len(st.session_state.tab_ids) > 1:
-        st.session_state.tab_ids.pop()
+        # Remove the active tab
+        active_idx = st.session_state.active_tab
+        tab_id = st.session_state.tab_ids.pop(active_idx)
+        # Clean up messages for this tab
+        if tab_id in st.session_state.tab_messages:
+            del st.session_state.tab_messages[tab_id]
+        # Update active tab index
+        st.session_state.active_tab = min(active_idx, len(st.session_state.tab_ids) - 1)
         st.rerun()
+with col4:
+    # Display active tab indicator
+    st.write(f"Tab: {st.session_state.active_tab + 1}")
 
 with st.sidebar:
     # Add logout button
@@ -398,10 +417,10 @@ for i, tab in enumerate(tabs):
                         elif enhanced_prompt:
                             content = enhanced_prompt  # Direct response (like time queries)
                         else:
-                            # Default to teacher agent
+                            # Default to teacher agent with streaming
+                            from streaming import get_streaming_response
                             teacher_agent = create_teacher_agent_with_datetime()
-                            response = teacher_agent(full_prompt)
-                            content = str(response)
+                            content = get_streaming_response(teacher_agent, full_prompt)
                             store_knowledge(content, query_context)
                     else:
                         if memory_backend == "OpenSearch Memory":

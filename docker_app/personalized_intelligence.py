@@ -1,12 +1,16 @@
 import json
 from datetime import datetime
 import boto3
+from api_retry import bedrock_client
 
 class PersonalizedIntelligence:
-    def __init__(self):
+    def __init__(self, cache_timeout=300):  # 5 minutes cache timeout
         self.user_profiles = {}
         self.conversation_memory = {}
         self.bedrock = boto3.client('bedrock-runtime', region_name='us-west-2')
+        self.cache = {}
+        self.cache_timestamps = {}
+        self.cache_timeout = cache_timeout
         
     def analyze_user_expertise(self, user_id, query, response_feedback=None):
         """Analyze user expertise level from interactions"""
@@ -38,7 +42,23 @@ class PersonalizedIntelligence:
         return profile
     
     def personalize_response(self, user_id, query, base_response):
-        """Personalize response based on user profile"""
+        """Personalize response based on user profile with caching"""
+        # Generate cache key based on user_id and query hash
+        import time
+        import hashlib
+        
+        # Create a deterministic cache key
+        query_hash = hashlib.md5(query[:100].encode()).hexdigest()
+        response_hash = hashlib.md5(base_response[:100].encode()).hexdigest()
+        cache_key = f"{user_id}:{query_hash}:{response_hash}"
+        
+        # Check cache first
+        current_time = time.time()
+        if cache_key in self.cache and current_time - self.cache_timestamps[cache_key] < self.cache_timeout:
+            print(f"Using cached personalization for user {user_id}")
+            return self.cache[cache_key]
+        
+        # Not in cache, proceed with personalization
         profile = self.user_profiles.get(user_id, {})
         expertise = profile.get('expertise_level', 'intermediate')
         
@@ -55,23 +75,47 @@ class PersonalizedIntelligence:
         """
         
         try:
-            response = self.bedrock.invoke_model(
-                modelId="us.amazon.nova-micro-v1:0",
-                body=json.dumps({
-                    "messages": [{"role": "user", "content": personalization_prompt}],
-                    "max_tokens": 400,
-                    "temperature": 0.3
-                })
+            # Use bedrock client with retry logic
+            personalized = bedrock_client.invoke_model(
+                model_id="us.amazon.nova-micro-v1:0",
+                prompt=personalization_prompt,
+                max_tokens=400,
+                temperature=0.3
             )
             
-            result = json.loads(response['body'].read())
-            personalized = result.get('content', [{}])[0].get('text', base_response)
+            # Fallback to original response if empty
+            if not personalized:
+                personalized = base_response
             
+            # Cache the result
+            self.cache[cache_key] = personalized
+            self.cache_timestamps[cache_key] = current_time
+            
+            # Cleanup old cache entries (every 100 requests)
+            if len(self.cache) % 100 == 0:
+                self._cleanup_cache()
+                
             return personalized
             
         except Exception as e:
             print(f"Personalization error: {str(e)}")
             return base_response
+            
+    def _cleanup_cache(self):
+        """Remove expired cache entries"""
+        import time
+        current_time = time.time()
+        expired_keys = [k for k, v in self.cache_timestamps.items() 
+                       if current_time - v > self.cache_timeout]
+        
+        for key in expired_keys:
+            if key in self.cache:
+                del self.cache[key]
+            if key in self.cache_timestamps:
+                del self.cache_timestamps[key]
+        
+        print(f"Cache cleanup: removed {len(expired_keys)} expired entries, {len(self.cache)} remaining")
+
     
     def maintain_conversation_context(self, user_id, query, response):
         """Maintain conversation memory for context"""
@@ -117,17 +161,13 @@ class PersonalizedIntelligence:
         """
         
         try:
-            response_obj = self.bedrock.invoke_model(
-                modelId="us.amazon.nova-micro-v1:0",
-                body=json.dumps({
-                    "messages": [{"role": "user", "content": suggestion_prompt}],
-                    "max_tokens": 150,
-                    "temperature": 0.4
-                })
+            # Use bedrock client with retry logic
+            suggestions = bedrock_client.invoke_model(
+                model_id="us.amazon.nova-micro-v1:0",
+                prompt=suggestion_prompt,
+                max_tokens=150,
+                temperature=0.4
             )
-            
-            result = json.loads(response_obj['body'].read())
-            suggestions = result.get('content', [{}])[0].get('text', '')
             
             return suggestions
             
