@@ -1,4 +1,5 @@
 import json
+import os
 from aws_cdk import (
     # Duration,
     Stack,
@@ -13,8 +14,11 @@ from aws_cdk import (
     aws_codepipeline as codepipeline,
     aws_codepipeline_actions as codepipeline_actions,
     aws_codebuild as codebuild,
+    aws_lambda as lambda_,
+    custom_resources as cr,
     SecretValue,
     CfnOutput,
+    Duration,
 )
 from constructs import Construct
 from docker_app.config_file import Config
@@ -40,20 +44,87 @@ class CdkStack(Stack):
                                                   generate_secret=True
                                                   )
 
-        # Create or update Cognito secret in Secrets Manager
-        secret = secretsmanager.Secret(
-            self, f"{prefix}ParamCognitoSecret",
-            secret_name=f"{Config.SECRETS_MANAGER_ID}-{env_name}",
-            description=f"Cognito credentials for {prefix} application",
-            generate_secret_string=secretsmanager.SecretStringGenerator(
-                secret_string_template=json.dumps({
-                    "pool_id": user_pool.user_pool_id,
-                    "app_client_id": user_pool_client.user_pool_client_id,
-                    "app_client_secret": "placeholder"
-                }),
-                generate_string_key="app_client_secret"
+        # Always use existing secret if it exists
+        secret_name = f"{Config.SECRETS_MANAGER_ID}-{env_name}"
+        
+        # Check if secret exists
+        secret_exists = False
+        try:
+            secrets_client = self.node.try_get_context('secrets_client')
+            if not secrets_client:
+                import boto3
+                secrets_client = boto3.client('secretsmanager')
+            
+            secrets_client.describe_secret(SecretId=secret_name)
+            secret_exists = True
+        except Exception:
+            secret_exists = False
+        
+        if secret_exists:
+            # Import existing secret
+            secret = secretsmanager.Secret.from_secret_name_v2(
+                self, f"{prefix}ParamCognitoSecret",
+                secret_name=secret_name
             )
-        )
+            
+            # Create Lambda function to update the secret
+            update_secret_lambda = lambda_.Function(
+                self, f"{prefix}UpdateSecretLambda",
+                runtime=lambda_.Runtime.PYTHON_3_9,
+                handler="update_secret_lambda.handler",
+                code=lambda_.Code.from_asset(os.path.join(os.path.dirname(__file__), '.')),
+                timeout=Duration.seconds(30),
+                environment={
+                    "SECRET_NAME": secret_name
+                }
+            )
+            
+            # Grant permissions to update the secret
+            secret.grant_write(update_secret_lambda)
+            
+            # Create custom resource to update the secret
+            update_secret_provider = cr.Provider(
+                self, f"{prefix}UpdateSecretProvider",
+                on_event_handler=update_secret_lambda
+            )
+            
+            # Custom resource to update the secret
+            cr.AwsCustomResource(
+                self, f"{prefix}UpdateSecretResource",
+                on_update=cr.AwsSdkCall(
+                    service="Lambda",
+                    action="invoke",
+                    parameters={
+                        "FunctionName": update_secret_lambda.function_name,
+                        "Payload": json.dumps({
+                            "ResourceProperties": {
+                                "SecretName": secret_name,
+                                "PoolId": user_pool.user_pool_id,
+                                "ClientId": user_pool_client.user_pool_client_id
+                            }
+                        })
+                    },
+                    physical_resource_id=cr.PhysicalResourceId.of(f"{secret_name}-update-{user_pool.user_pool_id}")
+                ),
+                policy=cr.AwsCustomResourcePolicy.from_sdk_calls(
+                    resources=cr.AwsCustomResourcePolicy.ANY_RESOURCE
+                )
+            )
+        else:
+            # Create new secret if it doesn't exist
+            secret = secretsmanager.Secret(
+                self, f"{prefix}ParamCognitoSecret",
+                secret_name=secret_name,
+                description=f"Cognito credentials for {prefix} application",
+                generate_secret_string=secretsmanager.SecretStringGenerator(
+                    secret_string_template=json.dumps({
+                        "pool_id": user_pool.user_pool_id,
+                        "app_client_id": user_pool_client.user_pool_client_id,
+                        "app_client_secret": "placeholder"
+                    }),
+                    generate_string_key="app_client_secret"
+                )
+            )
 
 
         # VPC for ALB and ECS cluster
