@@ -445,8 +445,17 @@ for i, tab in enumerate(tabs):
                     personalized_content = get_personalized_response(user_id, prompt, content)
                     
                     # Clean the response to remove routing information
-                    from response_cleaner import clean_response
-                    cleaned_content = clean_response(personalized_content)
+                    try:
+                        from response_cleaner import clean_response
+                        cleaned_content = clean_response(personalized_content)
+                        
+                        # If cleaning removed too much content, use the original
+                        if len(cleaned_content) < len(personalized_content) * 0.5 and len(personalized_content) > 100:
+                            print(f"Warning: Response cleaner removed too much content. Using original response.")
+                            cleaned_content = personalized_content
+                    except Exception as e:
+                        print(f"Error in response cleaner: {str(e)}")
+                        cleaned_content = personalized_content
                     
                     # Display cleaned personalized content
                     st.markdown(cleaned_content)
