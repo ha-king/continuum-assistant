@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import time
 from strands import Agent
 from strands_tools import file_read, file_write, editor, use_llm, memory, mem0_memory
 from model_options import get_model_options, get_default_model
@@ -10,26 +11,30 @@ from proactive_intelligence import initialize_proactive_intelligence, get_proact
 # Import lazy loading wrapper
 from lazy_assistant import LazyAssistant
 
-# Lazy load assistants to improve startup time
-# Consolidated assistants
+# Lazy load unified core domain assistants
+business_finance_assistant = LazyAssistant('unified_assistants', 'business_finance_assistant')
+tech_security_assistant = LazyAssistant('unified_assistants', 'tech_security_assistant')
+research_knowledge_assistant = LazyAssistant('unified_assistants', 'research_knowledge_assistant')
+specialized_industries_assistant = LazyAssistant('unified_assistants', 'specialized_industries_assistant')
+universal_assistant = LazyAssistant('unified_assistants', 'universal_assistant')
+
+# Keep specialized assistants for direct routing
+formula1_assistant = LazyAssistant('formula1_assistant', 'formula1_assistant')
+aviation_assistant = LazyAssistant('aviation_assistant', 'aviation_assistant')
+aviation_assistant_claude = LazyAssistant('claude_aviation_assistant', 'aviation_assistant_claude')
+
+# Legacy assistants (for backward compatibility)
 financial_assistant = LazyAssistant('consolidated_assistants', 'financial_assistant')
 security_assistant = LazyAssistant('consolidated_assistants', 'security_assistant')
 business_assistant = LazyAssistant('consolidated_assistants', 'business_assistant')
 tech_assistant = LazyAssistant('consolidated_assistants', 'tech_assistant')
 research_assistant = LazyAssistant('consolidated_assistants', 'research_assistant')
 sports_assistant = LazyAssistant('consolidated_assistants', 'sports_assistant')
-# Formula 1 assistant
-formula1_assistant = LazyAssistant('formula1_assistant', 'formula1_assistant')
-# Core assistants
 english_assistant = LazyAssistant('english_assistant', 'english_assistant')
 math_assistant = LazyAssistant('math_assistant', 'math_assistant')
 aws_assistant = LazyAssistant('aws_assistant', 'aws_assistant')
 louisiana_legal_assistant = LazyAssistant('louisiana_legal_assistant', 'louisiana_legal_assistant')
 general_assistant = LazyAssistant('no_expertise', 'general_assistant')
-universal_assistant = LazyAssistant('universal_assistant', 'universal_assistant')
-aviation_assistant = LazyAssistant('aviation_assistant', 'aviation_assistant')
-aviation_assistant_claude = LazyAssistant('claude_aviation_assistant', 'aviation_assistant_claude')
-# Legacy assistants (now consolidated)
 web_browser_assistant = LazyAssistant('web_browser_assistant', 'web_browser_assistant')
 from utils.auth import Auth
 from config_file import Config
@@ -89,33 +94,48 @@ def get_user_context():
 
 from response_processor import process_response
 
+# Import telemetry integration
+try:
+    from app_telemetry import (
+        track_app_startup, track_user_query, track_assistant_response,
+        track_router_decision, track_tab_change, track_error, TELEMETRY_ENABLED
+    )
+    if TELEMETRY_ENABLED:
+        print("Telemetry enabled")
+        track_app_startup()
+except ImportError:
+    # Create dummy functions if telemetry module is not available
+    def track_app_startup(): pass
+    def track_user_query(*args, **kwargs): pass
+    def track_assistant_response(*args, **kwargs): pass
+    def track_router_decision(*args, **kwargs): pass
+    def track_tab_change(*args, **kwargs): pass
+    def track_error(*args, **kwargs): pass
+    TELEMETRY_ENABLED = False
+    print("Telemetry disabled")
+
 TEACHER_SYSTEM_PROMPT = """
 You are TeachAssist, an AI orchestrator with real-time data access and PREDICTION capabilities.
 
-AVAILABLE ASSISTANTS:
-- Math Assistant: calculations and mathematical problems
-- English Assistant: writing, grammar, literature
-- Financial Assistant: finance, crypto, economics, market analysis
-- AWS Assistant: cloud architecture and best practices
-- Business Assistant: business development, networking, company intelligence
-- Tech Assistant: programming, AI, blockchain, web3
-- Security Assistant: cybersecurity, cryptography, threat analysis
+AVAILABLE CORE DOMAIN ASSISTANTS:
+- Business & Finance Assistant: finance, crypto, economics, business development, entrepreneurship, investments
+- Technology & Security Assistant: programming, AI, blockchain, web3, cybersecurity, AWS, cloud computing
+- Research & Knowledge Assistant: internet research, data analysis, math, English, writing, general knowledge
+- Specialized Industries Assistant: aviation, Formula 1, sports, legal, automotive industries
+- Universal Assistant: predictions, forecasting, and general queries across all domains
+
+SPECIALIZED ASSISTANTS (for specific queries):
 - Formula 1 Assistant: F1 racing with live data from multiple sources (OpenF1, Ergast, ESPN)
-- Sports Assistant: general sports and motorsports
-- Research Assistant: internet research with real-time data access
-- Louisiana Legal Assistant: Louisiana business law
-- Web Browser Assistant: website browsing and analysis
-- Aviation Assistant: flight data, FAA information, air traffic
-- Universal Assistant: ANY topic with prediction/forecasting capabilities
-- General Assistant: other topics
+- Aviation Assistant: flight data, FAA information, air traffic, aircraft tracking
 
 ROUTING RULES:
 1. For PREDICTION/FORECASTING queries (predict, forecast, will, future, next, expect), use Universal Assistant
 2. For F1/Formula 1/racing queries, use Formula 1 Assistant
-3. For AVIATION/FLIGHT queries (aircraft, flight, N628TS, N-numbers, airport, where is N), use Aviation Assistant
-4. For current/real-time queries, use Research or Web Browser assistants
-5. For topics without specific assistants, use Universal Assistant
-6. Route to most appropriate specialist assistant for known domains
+3. For AVIATION/FLIGHT queries (aircraft, flight, N-numbers, airport), use Aviation Assistant
+4. For BUSINESS/FINANCE queries, use Business & Finance Assistant
+5. For TECHNOLOGY/SECURITY queries, use Technology & Security Assistant
+6. For RESEARCH/KNOWLEDGE queries, use Research & Knowledge Assistant
+7. For topics without specific domain match, use Universal Assistant
 
 The Universal Assistant can handle predictions for ANY topic using historical + real-time data.
 """
@@ -224,7 +244,11 @@ with col1:
     # Set active tab when clicked
     for i, _ in enumerate(tabs):
         if i < len(tab_names):
-            st.session_state.active_tab = i
+            if st.session_state.active_tab != i:
+                # Track tab change
+                user_id = st.session_state.get('user_id', 'anonymous')
+                track_tab_change(user_id, st.session_state.active_tab, i)
+                st.session_state.active_tab = i
 with col2:
     if st.button("+ Tab"):
         st.session_state.tab_ids.append(st.session_state.next_tab_id)
@@ -267,81 +291,101 @@ with st.sidebar:
     
     assistant_mode = st.selectbox(
         "Assistant Mode:",
-        ["All Assistants (Auto-Route)", "Advanced Configuration"]
+        ["Core Domains (Auto-Route)", "Advanced Configuration"]
     )
     
     if assistant_mode == "Advanced Configuration":
-        with st.expander("🎯 Core Assistants", expanded=False):
-            use_math = st.checkbox("Math", value=True)
-            use_english = st.checkbox("English", value=True)
-            use_cs = st.checkbox("Computer Science", value=True)
-            use_financial = st.checkbox("Financial", value=True)
-            use_aws = st.checkbox("AWS", value=True)
-            use_research = st.checkbox("Research", value=True)
-            use_web_browser = st.checkbox("Web Browser", value=True)
+        with st.expander("🎯 Core Domain Assistants", expanded=True):
+            use_business_finance = st.checkbox("Business & Finance", value=True)
+            use_tech_security = st.checkbox("Technology & Security", value=True)
+            use_research_knowledge = st.checkbox("Research & Knowledge", value=True)
+            use_specialized_industries = st.checkbox("Specialized Industries", value=True)
+            use_universal = st.checkbox("Universal", value=True)
         
-        with st.expander("🏢 Business & Finance", expanded=False):
-            use_business_dev = st.checkbox("Business Development", value=True)
-            use_business_contact = st.checkbox("Business Contacts", value=True)
-            use_company_intelligence = st.checkbox("Company Intelligence", value=True)
-            use_economics = st.checkbox("Economics", value=True)
-            use_entrepreneurship = st.checkbox("Entrepreneurship", value=True)
-        
-        with st.expander("🌍 Global & Legal", expanded=False):
-            use_geopolitical = st.checkbox("Geopolitical", value=True)
-            use_international_finance = st.checkbox("International Finance", value=True)
-            use_louisiana_legal = st.checkbox("Louisiana Legal", value=True)
-            use_public_records = st.checkbox("Public Records", value=True)
-        
-        with st.expander("🔬 Technology & Security", expanded=False):
-            use_ai = st.checkbox("AI", value=True)
-            use_blockchain = st.checkbox("Blockchain", value=True)
-            use_cryptocurrency = st.checkbox("Cryptocurrency", value=True)
-            use_cybersec_defense = st.checkbox("Cybersecurity", value=True)
-            use_data_analysis = st.checkbox("Data Analysis", value=True)
-            use_predictive_analysis = st.checkbox("Predictive Analysis", value=True)
+        with st.expander("🔍 Legacy Assistants", expanded=False):
+            use_math = st.checkbox("Math", value=False)
+            use_english = st.checkbox("English", value=False)
+            use_cs = st.checkbox("Computer Science", value=False)
+            use_financial = st.checkbox("Financial", value=False)
+            use_aws = st.checkbox("AWS", value=False)
+            use_research = st.checkbox("Research", value=False)
+            use_web_browser = st.checkbox("Web Browser", value=False)
+            use_business_dev = st.checkbox("Business Development", value=False)
+            use_business_contact = st.checkbox("Business Contacts", value=False)
+            use_company_intelligence = st.checkbox("Company Intelligence", value=False)
+            use_economics = st.checkbox("Economics", value=False)
+            use_entrepreneurship = st.checkbox("Entrepreneurship", value=False)
+            use_geopolitical = st.checkbox("Geopolitical", value=False)
+            use_international_finance = st.checkbox("International Finance", value=False)
+            use_louisiana_legal = st.checkbox("Louisiana Legal", value=False)
+            use_public_records = st.checkbox("Public Records", value=False)
+            use_ai = st.checkbox("AI", value=False)
+            use_blockchain = st.checkbox("Blockchain", value=False)
+            use_cryptocurrency = st.checkbox("Cryptocurrency", value=False)
+            use_cybersec_defense = st.checkbox("Cybersecurity", value=False)
+            use_data_analysis = st.checkbox("Data Analysis", value=False)
+            use_predictive_analysis = st.checkbox("Predictive Analysis", value=False)
         
         # Set unused variables to False in advanced mode
-        use_general = True
+        use_general = st.checkbox("General", value=False)
     else:
-        # All assistants enabled in auto-route mode
-        use_math = use_english = use_cs = use_financial = use_aws = True
-        use_business_dev = use_research = use_louisiana_legal = True
-        use_web_browser = use_general = True
-        use_economics = use_entrepreneurship = use_ai = True
-        use_blockchain = use_cryptocurrency = use_cybersec_defense = True
+        # Core domain assistants enabled in auto-route mode
+        use_business_finance = use_tech_security = use_research_knowledge = True
+        use_specialized_industries = use_universal = True
+        
+        # Legacy assistants disabled in auto-route mode
+        use_math = use_english = use_cs = use_financial = use_aws = False
+        use_business_dev = use_research = use_louisiana_legal = False
+        use_web_browser = use_general = False
+        use_economics = use_entrepreneurship = use_ai = False
+        use_blockchain = use_cryptocurrency = use_cybersec_defense = False
+        use_business_contact = use_company_intelligence = use_geopolitical = False
+        use_international_finance = use_public_records = False
+        use_data_analysis = use_predictive_analysis = False
     
     st.divider()
-    st.caption(f"Active Assistants: {sum([use_math, use_english, use_cs, use_financial, use_aws, use_business_dev, use_research, use_louisiana_legal, use_web_browser, use_general])}")
+    active_count = sum([use_business_finance, use_tech_security, use_research_knowledge, 
+                        use_specialized_industries, use_universal])
+    legacy_count = sum([use_math, use_english, use_cs, use_financial, use_aws, 
+                        use_business_dev, use_research, use_louisiana_legal, 
+                        use_web_browser, use_general])
+    st.caption(f"Active Assistants: {active_count} core domains, {legacy_count} legacy")
 
-teacher_tools = []
-if use_math:
-    teacher_tools.append(math_assistant)
-if use_english:
-    teacher_tools.append(english_assistant)
-if use_financial or use_cryptocurrency or use_economics:
-    teacher_tools.append(financial_assistant)
-if use_aws:
-    teacher_tools.append(aws_assistant)
-if use_business_dev or use_entrepreneurship:
-    teacher_tools.append(business_assistant)
-if use_cs or use_ai or use_blockchain:
-    teacher_tools.append(tech_assistant)
-if use_cybersec_defense:
-    teacher_tools.append(security_assistant)
-# Include sports assistant and formula1 assistant for F1 queries
-teacher_tools.append(sports_assistant)
-teacher_tools.append(formula1_assistant)  # Add Formula 1 assistant
-if use_research:
-    teacher_tools.append(research_assistant)
-if use_louisiana_legal:
-    teacher_tools.append(louisiana_legal_assistant)
-if use_web_browser:
-    teacher_tools.append(web_browser_assistant)
-if use_general:
-    teacher_tools.append(general_assistant)
-    teacher_tools.append(universal_assistant)  # Always include universal assistant
-    teacher_tools.append(aviation_assistant)  # Always include aviation assistant
+# Initialize teacher tools with core domain assistants
+teacher_tools = [
+    business_finance_assistant,  # Core Domain 1: Business & Finance
+    tech_security_assistant,     # Core Domain 2: Technology & Security
+    research_knowledge_assistant, # Core Domain 3: Research & Knowledge
+    specialized_industries_assistant, # Core Domain 4: Specialized Industries
+    universal_assistant,         # Core Domain 5: Universal Assistant
+    formula1_assistant,          # Specialized: Formula 1
+    aviation_assistant           # Specialized: Aviation
+]
+
+# Add legacy assistants based on configuration if in advanced mode
+if assistant_mode == "Advanced Configuration":
+    if use_math:
+        teacher_tools.append(math_assistant)
+    if use_english:
+        teacher_tools.append(english_assistant)
+    if use_financial or use_cryptocurrency or use_economics:
+        teacher_tools.append(financial_assistant)
+    if use_aws:
+        teacher_tools.append(aws_assistant)
+    if use_business_dev or use_entrepreneurship:
+        teacher_tools.append(business_assistant)
+    if use_cs or use_ai or use_blockchain:
+        teacher_tools.append(tech_assistant)
+    if use_cybersec_defense:
+        teacher_tools.append(security_assistant)
+    if use_research:
+        teacher_tools.append(research_assistant)
+    if use_louisiana_legal:
+        teacher_tools.append(louisiana_legal_assistant)
+    if use_web_browser:
+        teacher_tools.append(web_browser_assistant)
+    if use_general:
+        teacher_tools.append(general_assistant)
 
 # Create teacher agent with datetime awareness
 def create_teacher_agent_with_datetime():
@@ -377,6 +421,12 @@ for i, tab in enumerate(tabs):
                 st.markdown(message["content"])
         
         if prompt := st.chat_input(f"Ask your question here... (Tab {tab_id+1})", key=f"chat_input_{tab_id}"):
+            # Get user ID for tracking
+            user_id = st.session_state.get('user_id', 'anonymous')
+            
+            # Track user query
+            track_user_query(user_id, prompt, tab_id)
+            
             st.session_state.tab_messages[tab_id].append({"role": "user", "content": prompt})
             with st.chat_message("user"):
                 st.markdown(prompt)
@@ -397,22 +447,42 @@ for i, tab in enumerate(tabs):
                     query_context = f"User query at {get_current_datetime()}: {prompt}"
                     
                     if action == "teacher":
-                        from smart_router import smart_route
+                        from unified_router import unified_route
                         
-                        # Smart routing with priority-based logic
                         # Use Claude 4.0 for aviation if selected
                         use_claude = selected_model == "anthropic.claude-4-0:0"
                         
+                        # Map assistants to domains using the new unified structure
                         assistants = {
+                            # Core domain assistants
+                            'business_finance': business_finance_assistant,
+                            'tech_security': tech_security_assistant,
+                            'research_knowledge': research_knowledge_assistant,
+                            'specialized_industries': specialized_industries_assistant,
+                            'universal': universal_assistant,
+                            
+                            # Specialized assistants for direct routing
                             'aviation': aviation_assistant_claude if use_claude else aviation_assistant,
-                            'sports': sports_assistant,
-                            'formula1': formula1_assistant,  # Add Formula 1 assistant
+                            'formula1': formula1_assistant,
+                            
+                            # Legacy assistants for backward compatibility
                             'financial': financial_assistant,
+                            'sports': sports_assistant,
                             'web_browser': web_browser_assistant,
                             'research': research_assistant
                         }
                         
-                        assistant_func, enhanced_prompt = smart_route(prompt, get_current_datetime(), assistants)
+                        # Start timing for response time tracking
+                        start_time = time.time()
+                        
+                        # Unified routing with tracking
+                        assistant_func, enhanced_prompt = unified_route(prompt, get_current_datetime(), assistants)
+                        
+                        # Track routing decision
+                        if assistant_func:
+                            assistant_name = assistant_func.__name__ if hasattr(assistant_func, "__name__") else str(assistant_func)
+                            matched_rule = "direct" if assistant_name == "direct_response" else assistant_name.replace("_assistant", "")
+                            track_router_decision(prompt, matched_rule, assistant_name, 0.8)
                         
                         if assistant_func:
                             content = assistant_func(enhanced_prompt)
@@ -450,6 +520,15 @@ for i, tab in enumerate(tabs):
                     user_data = {"user_id": user_id, "location": st.session_state.get('user_location')}
                     processed_content = process_response(personalized_content, prompt, user_data)
                     
+                    # Calculate response time
+                    response_time_ms = int((time.time() - start_time) * 1000)
+                    
+                    # Track assistant response
+                    assistant_name = "direct_response" if enhanced_prompt and not assistant_func else \
+                                   (assistant_func.__name__ if assistant_func and hasattr(assistant_func, "__name__") \
+                                    else (action if action else "unknown"))
+                    track_assistant_response(user_id, prompt, assistant_name, response_time_ms, tab_id)
+                    
                     # Display processed content
                     st.markdown(processed_content)
                     
@@ -475,3 +554,6 @@ for i, tab in enumerate(tabs):
                     error_msg = f"An error occurred: {str(e)}"
                     st.markdown(error_msg)
                     st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": error_msg})
+                    
+                    # Track error
+                    track_error(user_id, prompt, str(e), tab_id)
