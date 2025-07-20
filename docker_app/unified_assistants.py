@@ -17,6 +17,11 @@ def business_finance_assistant(query: str) -> str:
     """
     enhanced_query = enhance_query_with_realtime(query, "business_finance")
     
+    # Check if this is a crypto query and add specific context
+    query_lower = query.lower()
+    if any(term in query_lower for term in ["crypto", "bitcoin", "ethereum", "btc", "eth", "blockchain", "token", "coin", "wallet"]):
+        enhanced_query = f"CRYPTO QUERY: {enhanced_query}"
+    
     system_prompt = """
     You are a comprehensive business and finance expert with REAL-TIME market data access.
     
@@ -35,6 +40,10 @@ def business_finance_assistant(query: str) -> str:
     3. Provide well-reasoned analysis with confidence levels
     4. Include risk assessments for any predictions
     5. Avoid making exaggerated claims about returns
+    
+    IMPORTANT: You ALWAYS have access to real-time market data. This data is provided in your query context.
+    For cryptocurrency queries, you have access to current prices and market trends.
+    For financial queries, you have access to current market conditions.
     
     Always use the real-time data provided to give accurate current information.
     """
@@ -126,12 +135,17 @@ def specialized_industries_assistant(query: str) -> str:
     """
     enhanced_query = enhance_query_with_realtime(query, "specialized_industries")
     
+    # Check if this is an F1/motorsports query and add specific context
+    query_lower = query.lower()
+    if any(term in query_lower for term in ["f1", "formula", "race", "grand prix", "motorsport", "driver", "team"]):
+        enhanced_query = f"FORMULA 1 QUERY: {enhanced_query}"
+    
     system_prompt = """
     You are a specialized industries expert with deep domain knowledge in multiple sectors.
     
     CAPABILITIES:
     - Aviation and flight data analysis
-    - Formula 1 and motorsports expertise
+    - Formula 1 and motorsports expertise with LIVE race data
     - Sports analysis and statistics
     - Louisiana legal and business law
     - Automotive industry knowledge
@@ -142,6 +156,11 @@ def specialized_industries_assistant(query: str) -> str:
     3. Provide expert-level analysis and insights
     4. Consider regulatory and industry-specific constraints
     5. Stay current with industry developments and trends
+    
+    IMPORTANT: For Formula 1 queries, you ALWAYS have access to live race data, current standings, and team/driver information.
+    This data is provided in your query context. Use this real-time information to provide accurate analysis.
+    
+    For aviation queries, you have access to flight tracking data and aircraft information.
     
     Always provide industry-specific context and explain specialized terminology.
     """

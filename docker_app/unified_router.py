@@ -114,12 +114,12 @@ def unified_route(prompt: str, datetime_context: str, assistants: Dict[str, Call
             return assistants["aviation"], f"{datetime_context}{prompt}"
     
     # Check for Formula 1 queries
-    if contains_keywords(prompt, "formula1"):
+    if contains_keywords(prompt, "formula1") or any(term in prompt.lower() for term in ["f1", "grand prix", "formula one", "racing", "driver", "team", "lap", "circuit"]):
         if "formula1" in assistants:
             logger.info(f"Router: '{prompt[:50]}...' -> formula1")
             if TELEMETRY_ENABLED:
                 track_router_decision(prompt, "specialized_industries", "formula1_assistant", 0.9)
-            return assistants["formula1"], f"{datetime_context}{prompt}"
+            return assistants["formula1"], f"{datetime_context}IMPORTANT: You have access to live F1 data. Use the real-time race information provided above to make informed predictions and analysis.\n\n{prompt}"
     
     # Check for prediction queries (route to universal)
     if contains_keywords(prompt, "prediction"):
@@ -128,6 +128,14 @@ def unified_route(prompt: str, datetime_context: str, assistants: Dict[str, Call
             if TELEMETRY_ENABLED:
                 track_router_decision(prompt, "universal", "universal_assistant", 0.8)
             return assistants["universal"], f"{datetime_context}PREDICTION QUERY: {prompt}"
+    
+    # Check for crypto queries
+    if any(term in prompt.lower() for term in ["crypto", "bitcoin", "ethereum", "btc", "eth", "blockchain", "token", "coin", "wallet"]):
+        if "business_finance" in assistants:
+            logger.info(f"Router: '{prompt[:50]}...' -> business_finance (crypto)")
+            if TELEMETRY_ENABLED:
+                track_router_decision(prompt, "business_finance", "business_finance_assistant", 0.9)
+            return assistants["business_finance"], f"{datetime_context}IMPORTANT: You have access to live cryptocurrency price data. Use the real-time market information provided above for accurate analysis.\n\n{prompt}"
     
     # Use domain detection from unified_assistants
     try:
@@ -149,7 +157,15 @@ def unified_route(prompt: str, datetime_context: str, assistants: Dict[str, Call
             logger.info(f"Router: '{prompt[:50]}...' -> {assistant_key}")
             if TELEMETRY_ENABLED:
                 track_router_decision(prompt, domain, f"{assistant_key}_assistant", 0.8)
-            return assistants[assistant_key], f"{datetime_context}{prompt}"
+            
+            # Add domain-specific context
+            enhanced_context = ""
+            if assistant_key == "business_finance":
+                enhanced_context = "IMPORTANT: You have access to real-time financial and market data.\n\n"
+            elif assistant_key == "specialized_industries":
+                enhanced_context = "IMPORTANT: You have access to specialized industry data including aviation and motorsports.\n\n"
+            
+            return assistants[assistant_key], f"{datetime_context}{enhanced_context}{prompt}"
     except ImportError:
         logger.warning("Could not import detect_domain from unified_assistants")
     
