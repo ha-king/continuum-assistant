@@ -125,7 +125,12 @@ class CdkStack(Stack):
                     protocol=ecs.Protocol.TCP)],
             logging=ecs.LogDrivers.aws_logs(stream_prefix="WebContainerLogs"),
             environment={
-                "ENVIRONMENT": env_name
+                "ENVIRONMENT": env_name,
+                "CONVERSATION_TABLE": "user-conversations",
+                "CONVERSATION_BUCKET": f"user-conversations-data-{self.account}-{self.region}",
+                "USER_PROFILES_TABLE": "user-profiles",
+                "RESPONSE_CACHE_TABLE": "response-cache",
+                "AWS_REGION": self.region
             }
         )
 
@@ -162,6 +167,32 @@ class CdkStack(Stack):
 
         # Grant access to read the secret in Secrets Manager
         secret.grant_read(task_role)
+        
+        # Add policy for DynamoDB access to user profiles and response cache
+        dynamodb_policy = iam.Policy(
+            self,
+            f"{prefix}DynamoDBPolicy",
+            statements=[
+                iam.PolicyStatement(
+                    actions=[
+                        "dynamodb:PutItem",
+                        "dynamodb:GetItem",
+                        "dynamodb:DeleteItem",
+                        "dynamodb:Query",
+                        "dynamodb:Scan"
+                    ],
+                    resources=[
+                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/user-profiles",
+                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/user-profiles/index/*",
+                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/response-cache",
+                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/response-cache/index/*",
+                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/user-conversations",
+                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/user-conversations/index/*"
+                    ]
+                )
+            ]
+        )
+        task_role.attach_inline_policy(dynamodb_policy)
 
         # Add ALB as CloudFront Origin
         origin = origins.LoadBalancerV2Origin(

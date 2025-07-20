@@ -93,15 +93,23 @@ def get_current_datetime():
         return current_time.strftime("%A, %B %d, %Y at %I:%M %p UTC")
 
 def get_user_context():
-    """Get user context including location and timezone"""
+    """Get user context including location, timezone, and personal information"""
     from datetime import datetime
+    from user_profile import get_personal_context
     
     # Provide context without specific dates that confuse the model
     context = "You have access to current real-time market data.\n"
     
+    # Add geolocation if available
     location = st.session_state.get('user_location')
     if location:
         context += f"User location: Latitude {location['latitude']:.4f}, Longitude {location['longitude']:.4f}\n"
+    
+    # Add personal context if available
+    user_id = st.session_state.get('user_id', 'anonymous')
+    personal_context = get_personal_context(user_id)
+    if personal_context:
+        context += f"\n{personal_context}\n"
     
     return context + "\n"
 
@@ -404,6 +412,10 @@ if prompt := st.chat_input("Ask your question here..."):
             # Track user query
             track_user_query(user_id, prompt, 0)  # Use 0 as default tab_id
             
+            # Extract and store personal information from message
+            from user_profile import update_user_profile
+            extracted_info = update_user_profile(user_id, prompt)
+            
             # Add timestamp to user message for persistence
             message_with_timestamp = {
                 "role": "user", 
@@ -435,52 +447,67 @@ if prompt := st.chat_input("Ask your question here..."):
                     
                     if action == "teacher":
                         from unified_router import unified_route
+                        from response_cache import response_cache
                         
                         # Use Claude 4.0 for aviation if selected
                         use_claude = selected_model == "anthropic.claude-4-0:0"
                         
-                        # Map assistants to domains using the new unified structure
-                        assistants = {
-                            # Core domain assistants
-                            'business_finance': business_finance_assistant,
-                            'tech_security': tech_security_assistant,
-                            'research_knowledge': research_knowledge_assistant,
-                            'specialized_industries': specialized_industries_assistant,
-                            'universal': universal_assistant,
-                            
-                            # Specialized assistants for direct routing
-                            'aviation': aviation_assistant_claude if use_claude else aviation_assistant,
-                            'formula1': formula1_assistant,
-                            
-                            # Legacy assistants for backward compatibility
-                            'financial': financial_assistant,
-                            'sports': sports_assistant,
-                            'web_browser': web_browser_assistant,
-                            'research': research_assistant
-                        }
+                        # Check cache first
+                        cache_key = response_cache.get_cache_key(prompt, selected_model, user_id)
+                        cached_response = response_cache.get(cache_key)
                         
-                        # Start timing for response time tracking
-                        start_time = time.time()
-                        
-                        # Unified routing with tracking
-                        assistant_func, enhanced_prompt = unified_route(prompt, get_current_datetime(), assistants)
-                        
-                        # Track routing decision
-                        if assistant_func:
-                            assistant_name = assistant_func.__name__ if hasattr(assistant_func, "__name__") else str(assistant_func)
-                            matched_rule = "direct" if assistant_name == "direct_response" else assistant_name.replace("_assistant", "")
-                            track_router_decision(prompt, matched_rule, assistant_name, 0.8)
-                        
-                        if assistant_func:
-                            content = assistant_func(enhanced_prompt)
-                        elif enhanced_prompt:
-                            content = enhanced_prompt  # Direct response (like time queries)
+                        if cached_response:
+                            # Use cached response
+                            content = cached_response
+                            # Start timing for response time tracking (minimal since using cache)
+                            start_time = time.time()
                         else:
-                            # Default to teacher agent with streaming
-                            from streaming import get_streaming_response
-                            teacher_agent = create_teacher_agent_with_datetime()
-                            content = get_streaming_response(teacher_agent, full_prompt)
-                            store_knowledge(content, query_context)
+                            # Start timing for response time tracking
+                            start_time = time.time()
+                            
+                            # Map assistants to domains using the new unified structure
+                            assistants = {
+                                # Core domain assistants
+                                'business_finance': business_finance_assistant,
+                                'tech_security': tech_security_assistant,
+                                'research_knowledge': research_knowledge_assistant,
+                                'specialized_industries': specialized_industries_assistant,
+                                'universal': universal_assistant,
+                                
+                                # Specialized assistants for direct routing
+                                'aviation': aviation_assistant_claude if use_claude else aviation_assistant,
+                                'formula1': formula1_assistant,
+                                
+                                # Legacy assistants for backward compatibility
+                                'financial': financial_assistant,
+                                'sports': sports_assistant,
+                                'web_browser': web_browser_assistant,
+                                'research': research_assistant
+                            }
+                            
+                            # Unified routing with tracking
+                            assistant_func, enhanced_prompt = unified_route(prompt, get_current_datetime(), assistants)
+                            
+                            # Track routing decision
+                            if assistant_func:
+                                assistant_name = assistant_func.__name__ if hasattr(assistant_func, "__name__") else str(assistant_func)
+                                matched_rule = "direct" if assistant_name == "direct_response" else assistant_name.replace("_assistant", "")
+                                track_router_decision(prompt, matched_rule, assistant_name, 0.8)
+                            
+                            if assistant_func:
+                                content = assistant_func(enhanced_prompt)
+                            elif enhanced_prompt:
+                                content = enhanced_prompt  # Direct response (like time queries)
+                            else:
+                                # Default to teacher agent with streaming
+                                from streaming import get_streaming_response
+                                teacher_agent = create_teacher_agent_with_datetime()
+                                content = get_streaming_response(teacher_agent, full_prompt)
+                                store_knowledge(content, query_context)
+                            
+                            # Cache the response if it's not time-sensitive
+                            if not any(time_term in prompt.lower() for time_term in ['time', 'date', 'today', 'now', 'current']):
+                                response_cache.set(cache_key, content)
                     else:
                         if memory_backend == "OpenSearch Memory":
                             content = run_memory_agent(full_prompt, datetime_context)
