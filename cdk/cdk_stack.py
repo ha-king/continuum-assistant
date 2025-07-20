@@ -272,6 +272,24 @@ class CdkStack(Stack):
             ]
         )
         task_role.attach_inline_policy(s3_policy)
+        
+        # Add CloudWatch Logs permissions
+        logs_policy = iam.Policy(
+            self,
+            f"{prefix}LogsPolicy",
+            statements=[
+                iam.PolicyStatement(
+                    actions=[
+                        "logs:CreateLogGroup",
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents",
+                        "logs:DescribeLogStreams"
+                    ],
+                    resources=["*"]
+                )
+            ]
+        )
+        task_role.attach_inline_policy(logs_policy)
 
         # Add ALB as CloudFront Origin
         origin = origins.LoadBalancerV2Origin(
