@@ -6,6 +6,13 @@ import re
 import logging
 from typing import Dict, Callable, Tuple, Optional
 
+# Import direct crypto forecast
+try:
+    from direct_crypto_forecast import get_direct_forecast
+    DIRECT_FORECAST_AVAILABLE = True
+except ImportError:
+    DIRECT_FORECAST_AVAILABLE = False
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('unified_router')
@@ -128,6 +135,19 @@ def unified_route(prompt: str, datetime_context: str, assistants: Dict[str, Call
             if TELEMETRY_ENABLED:
                 track_router_decision(prompt, "universal", "universal_assistant", 0.8)
             return assistants["universal"], f"{datetime_context}PREDICTION QUERY: {prompt}"
+    
+    # Check for crypto forecast queries - use direct bypass
+    if DIRECT_FORECAST_AVAILABLE and any(term in prompt.lower() for term in ["crypto forecast", "bitcoin prediction", "ethereum prediction", "price prediction", "crypto price", "btc forecast", "eth forecast", "crypto analysis"]):
+        try:
+            # Get direct forecast with no caching
+            direct_forecast = get_direct_forecast(prompt)
+            logger.info(f"Router: '{prompt[:50]}...' -> direct_crypto_forecast")
+            if TELEMETRY_ENABLED:
+                track_router_decision(prompt, "direct_bypass", "direct_crypto_forecast", 1.0)
+            return None, direct_forecast
+        except Exception as e:
+            logger.error(f"Direct crypto forecast error: {str(e)}")
+            # Continue to regular routing if direct forecast fails
     
     # Check for crypto queries
     if any(term in prompt.lower() for term in ["crypto", "bitcoin", "ethereum", "btc", "eth", "blockchain", "token", "coin", "wallet"]):
