@@ -39,9 +39,14 @@ web_browser_assistant = LazyAssistant('web_browser_assistant', 'web_browser_assi
 from utils.auth import Auth
 from config_file import Config
 
+# Import conversation storage
+from conversation_storage import conversation_storage, load_user_conversation, save_user_conversation
+
 # Authentication setup
 if os.environ.get("LOCAL_DEV"):
     st.write("🔓 **Local Development Mode** - Authentication bypassed")
+    # Set a default user ID for local development
+    st.session_state.user_id = "local-dev-user"
 else:
     try:
         # Detect environment from environment variable or default to prod
@@ -58,6 +63,12 @@ else:
         
         if not is_logged_in:
             st.stop()
+        
+        # Store user ID in session state for conversation persistence
+        if 'user_id' not in st.session_state and authenticator.user is not None:
+            st.session_state.user_id = authenticator.user.username
+            # Load user's conversation history
+            load_user_conversation(st.session_state.user_id)
             
     except Exception as e:
         st.error(f"Authentication error: {str(e)}")
@@ -225,50 +236,11 @@ if 'user_timezone' not in st.session_state or 'user_location' not in st.session_
 
 def initialize_session_state():
     """Initialize all session state variables in one place"""
-    if "tab_ids" not in st.session_state:
-        st.session_state.tab_ids = [0]
-    if "next_tab_id" not in st.session_state:
-        st.session_state.next_tab_id = 1
-    if "active_tab" not in st.session_state:
-        st.session_state.active_tab = 0
-    if "tab_messages" not in st.session_state:
-        st.session_state.tab_messages = {}
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
 # Initialize session state
 initialize_session_state()
-
-col1, col2, col3, col4 = st.columns([5, 1, 1, 1])
-with col1:
-    tab_names = [f"Chat {tid+1}" for tid in st.session_state.tab_ids]
-    tabs = st.tabs(tab_names)
-    # Set active tab when clicked
-    for i, _ in enumerate(tabs):
-        if i < len(tab_names):
-            if st.session_state.active_tab != i:
-                # Track tab change
-                user_id = st.session_state.get('user_id', 'anonymous')
-                track_tab_change(user_id, st.session_state.active_tab, i)
-                st.session_state.active_tab = i
-with col2:
-    if st.button("+ Tab"):
-        st.session_state.tab_ids.append(st.session_state.next_tab_id)
-        st.session_state.next_tab_id += 1
-        st.session_state.active_tab = len(st.session_state.tab_ids) - 1
-        st.rerun()
-with col3:
-    if st.button("✕ Close") and len(st.session_state.tab_ids) > 1:
-        # Remove the active tab
-        active_idx = st.session_state.active_tab
-        tab_id = st.session_state.tab_ids.pop(active_idx)
-        # Clean up messages for this tab
-        if tab_id in st.session_state.tab_messages:
-            del st.session_state.tab_messages[tab_id]
-        # Update active tab index
-        st.session_state.active_tab = min(active_idx, len(st.session_state.tab_ids) - 1)
-        st.rerun()
-with col4:
-    # Display active tab indicator
-    st.write(f"Tab: {st.session_state.active_tab + 1}")
 
 with st.sidebar:
     # Add logout button
@@ -403,31 +375,39 @@ For time/date queries, respond directly with current time.
 
 teacher_agent = create_teacher_agent_with_datetime()
 
-if "tab_messages" not in st.session_state:
-    st.session_state.tab_messages = {}
+# Display chat interface
+if st.button("🗑️ Clear Chat"):
+    st.session_state.messages = []
+    # Delete conversation from persistent storage
+    user_id = st.session_state.get('user_id', 'anonymous')
+    if user_id != 'anonymous':
+        conversation_storage.delete_conversation(user_id)
+    st.rerun()
 
-for i, tab in enumerate(tabs):
-    with tab:
-        tab_id = st.session_state.tab_ids[i]
-        if tab_id not in st.session_state.tab_messages:
-            st.session_state.tab_messages[tab_id] = []
-        
-        if st.button("🗑️ Clear Chat", key=f"clear_{tab_id}"):
-            st.session_state.tab_messages[tab_id] = []
-            st.rerun()
-        
-        for message in st.session_state.tab_messages[tab_id]:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-        
-        if prompt := st.chat_input(f"Ask your question here... (Tab {tab_id+1})", key=f"chat_input_{tab_id}"):
+# Display chat messages
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Chat input
+if prompt := st.chat_input("Ask your question here..."):
             # Get user ID for tracking
             user_id = st.session_state.get('user_id', 'anonymous')
             
             # Track user query
-            track_user_query(user_id, prompt, tab_id)
+            track_user_query(user_id, prompt, 0)  # Use 0 as default tab_id
             
-            st.session_state.tab_messages[tab_id].append({"role": "user", "content": prompt})
+            # Add timestamp to user message for persistence
+            message_with_timestamp = {
+                "role": "user", 
+                "content": prompt,
+                "timestamp": int(time.time())
+            }
+            st.session_state.messages.append(message_with_timestamp)
+            
+            # Save conversation after user message
+            save_user_conversation(user_id)
+            
             with st.chat_message("user"):
                 st.markdown(prompt)
             
@@ -440,7 +420,7 @@ for i, tab in enumerate(tabs):
                     router_agent = Agent(tools=[use_llm])
                     action = determine_action(router_agent, prompt)
                     
-                    context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.tab_messages[tab_id][-10:]])
+                    context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.messages[-10:]])
                     full_prompt = f"{datetime_context}Context: {context}\n\nCurrent question: {prompt}" if context else f"{datetime_context}Current question: {prompt}"
                     
                     # Store user query context for knowledge base
@@ -527,7 +507,7 @@ for i, tab in enumerate(tabs):
                     assistant_name = "direct_response" if enhanced_prompt and not assistant_func else \
                                    (assistant_func.__name__ if assistant_func and hasattr(assistant_func, "__name__") \
                                     else (action if action else "unknown"))
-                    track_assistant_response(user_id, prompt, assistant_name, response_time_ms, tab_id)
+                    track_assistant_response(user_id, prompt, assistant_name, response_time_ms, 0)  # Use 0 as default tab_id
                     
                     # Display processed content
                     st.markdown(processed_content)
@@ -541,7 +521,17 @@ for i, tab in enumerate(tabs):
                                 st.markdown(references)
                                 st.markdown(f"**Assistant Used:** {action.title()} Mode")
                     
-                    st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": processed_content})
+                    # Add timestamp to message for persistence
+                    message_with_timestamp = {
+                        "role": "assistant", 
+                        "content": processed_content,
+                        "timestamp": int(time.time())
+                    }
+                    st.session_state.messages.append(message_with_timestamp)
+                    
+                    # Save conversation to persistent storage
+                    user_id = st.session_state.get('user_id', 'anonymous')
+                    save_user_conversation(user_id)
                     
                     # Show user insights in sidebar
                     if user_id != 'anonymous':
@@ -553,7 +543,18 @@ for i, tab in enumerate(tabs):
                 except Exception as e:
                     error_msg = f"An error occurred: {str(e)}"
                     st.markdown(error_msg)
-                    st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": error_msg})
+                    
+                    # Add error message with timestamp
+                    error_message = {
+                        "role": "assistant", 
+                        "content": error_msg,
+                        "timestamp": int(time.time()),
+                        "error": True
+                    }
+                    st.session_state.messages.append(error_message)
+                    
+                    # Save conversation with error to persistent storage
+                    save_user_conversation(user_id)
                     
                     # Track error
-                    track_error(user_id, prompt, str(e), tab_id)
+                    track_error(user_id, prompt, str(e), 0)  # Use 0 as default tab_id
