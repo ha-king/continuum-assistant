@@ -192,13 +192,13 @@ class CryptoPredictionEngine:
     
     def format_prediction_for_query(self, query: str) -> str:
         """
-        Format prediction data based on query
+        Format prediction data based on query with forced real-time data
         
         Args:
             query: User query about cryptocurrency predictions
             
         Returns:
-            Formatted prediction data
+            Formatted prediction data with real-time prices
         """
         query_lower = query.lower()
         
@@ -243,17 +243,40 @@ class CryptoPredictionEngine:
                 return "No cryptocurrencies currently meet the high growth potential criteria."
         
         elif mentioned_coins:
-            # Query about specific coins
+            # Query about specific coins with forced real-time data
             analyses = []
             for symbol in mentioned_coins[:3]:  # Limit to 3 coins
-                analysis = self.analyze_growth_potential(symbol, time_horizon)
-                if "error" not in analysis:
-                    multiple = analysis.get("potential_multiple", 0)
-                    confidence = analysis.get("confidence", self.CONFIDENCE_LOW)
-                    price = analysis.get("current_price", 0)
-                    potential_price = analysis.get("potential_price", 0)
+                # Force real-time price data
+                from direct_crypto_api import get_realtime_price
+                realtime_data = get_realtime_price(symbol)
+                
+                if realtime_data:
+                    # Use real-time price for display
+                    realtime_price = realtime_data.get("price_usd", 0)
                     
-                    analyses.append(f"{symbol}: Current ${price:.2f} → Potential ${potential_price:.2f} ({multiple:.1f}x, {confidence} confidence)")
+                    # Get growth analysis
+                    analysis = self.analyze_growth_potential(symbol, time_horizon)
+                    if "error" not in analysis:
+                        multiple = analysis.get("potential_multiple", 0)
+                        confidence = analysis.get("confidence", self.CONFIDENCE_LOW)
+                        
+                        # Calculate potential price based on real-time price
+                        potential_price = realtime_price * multiple
+                        
+                        # Include source for transparency
+                        source = realtime_data.get("source", "API")
+                        
+                        analyses.append(f"{symbol}: Current ${realtime_price:.2f} → Potential ${potential_price:.2f} ({multiple:.1f}x, {confidence} confidence) [via {source}]")
+                else:
+                    # Fallback to regular analysis
+                    analysis = self.analyze_growth_potential(symbol, time_horizon)
+                    if "error" not in analysis:
+                        multiple = analysis.get("potential_multiple", 0)
+                        confidence = analysis.get("confidence", self.CONFIDENCE_LOW)
+                        price = analysis.get("current_price", 0)
+                        potential_price = analysis.get("potential_price", 0)
+                        
+                        analyses.append(f"{symbol}: Current ${price:.2f} → Potential ${potential_price:.2f} ({multiple:.1f}x, {confidence} confidence)")
             
             if analyses:
                 current_time = datetime.now().strftime("%H:%M:%S UTC")
@@ -262,18 +285,39 @@ class CryptoPredictionEngine:
                 return "Unable to analyze the specified cryptocurrencies."
         
         else:
-            # General market prediction
+            # General market prediction with forced real-time data
+            from direct_crypto_api import get_realtime_price
+            
+            # Get real-time BTC price
+            btc_realtime = get_realtime_price("BTC")
+            btc_price = btc_realtime.get("price_usd", 0) if btc_realtime else 0
+            btc_source = btc_realtime.get("source", "API") if btc_realtime else "unknown"
+            
+            # Get real-time ETH price
+            eth_realtime = get_realtime_price("ETH")
+            eth_price = eth_realtime.get("price_usd", 0) if eth_realtime else 0
+            eth_source = eth_realtime.get("source", "API") if eth_realtime else "unknown"
+            
+            # Get growth analysis
             btc_analysis = self.analyze_growth_potential("BTC", time_horizon)
             eth_analysis = self.analyze_growth_potential("ETH", time_horizon)
             
+            # Get market overview
             market_overview = crypto_data_service.get_market_overview()
             market_cap = market_overview.get("total_market_cap_usd", 0) / 1e12  # In trillions
+            
+            # Calculate potential prices based on real-time prices
+            btc_multiple = btc_analysis.get("potential_multiple", 0)
+            eth_multiple = eth_analysis.get("potential_multiple", 0)
+            
+            btc_potential = btc_price * btc_multiple
+            eth_potential = eth_price * eth_multiple
             
             current_time = datetime.now().strftime("%H:%M:%S UTC")
             return f"Crypto Market Forecast ({time_horizon}) as of {current_time}:\\n" + \
                    f"Total Market Cap: ${market_cap:.2f}T\\n" + \
-                   f"BTC: {btc_analysis.get('potential_multiple', 0):.1f}x potential ({btc_analysis.get('confidence', 'low')} confidence)\\n" + \
-                   f"ETH: {eth_analysis.get('potential_multiple', 0):.1f}x potential ({eth_analysis.get('confidence', 'low')} confidence)"
+                   f"BTC: Current ${btc_price:,.2f} → Potential ${btc_potential:,.2f} ({btc_multiple:.1f}x, {btc_analysis.get('confidence', 'low')} confidence) [via {btc_source}]\\n" + \
+                   f"ETH: Current ${eth_price:,.2f} → Potential ${eth_potential:,.2f} ({eth_multiple:.1f}x, {eth_analysis.get('confidence', 'low')} confidence) [via {eth_source}]"
 
 # Create singleton instance
 crypto_prediction_engine = CryptoPredictionEngine()
