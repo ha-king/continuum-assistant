@@ -9,3 +9,6 @@ strands-agents-tools[mem0_memory]
 streamlit
 streamlit-cognito-auth
 pytz
+schedule
+requests
+urllib3

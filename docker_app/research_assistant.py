@@ -1,12 +1,16 @@
 from strands import Agent, tool
-from web_browser_assistant import web_browser_assistant
+from realtime_data_access import enhance_query_with_realtime
 import requests
 import urllib.parse
 import json
 import re
 
 RESEARCH_SYSTEM_PROMPT = """
-You are ResearchAssist, a specialized research assistant with internet access capabilities. Your role is to:
+You are ResearchAssist, a specialized research assistant with internet access capabilities. 
+
+IMPORTANT: You will receive current date/time context at the beginning of queries. Use this as the actual current date/time for all research and responses. Never assume dates from model names or other sources.
+
+Your role is to:
 
 1. Information Gathering:
    - Search for current information on various topics
@@ -42,12 +46,13 @@ def research_assistant(query: str) -> str:
     """
     try:
         print("Routed to Research Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "research")
         
-        # Gather research data
+        # Gather additional research data
         search_results = perform_active_web_search(query)
         
         # Format query for the research agent
-        formatted_query = f"Research this query and provide comprehensive findings with sources: {query}\n\nSearch Results: {search_results}"
+        formatted_query = f"Research this query and provide comprehensive findings with sources: {enhanced_query}\n\nAdditional Search Results: {search_results}"
         
         # Create research agent
         research_agent = Agent(

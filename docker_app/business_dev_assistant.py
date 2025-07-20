@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from web_browser_assistant import web_browser_assistant
 
 BUSINESS_DEV_SYSTEM_PROMPT = """
@@ -44,9 +45,11 @@ def business_dev_assistant(query: str) -> str:
     """
     try:
         print("Routed to Business Dev Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "business_dev")
+
         
         # Format query for the business dev agent
-        formatted_query = f"Provide strategic business development guidance for: {query}"
+        formatted_query = f"Provide strategic business development guidance for: {enhanced_query}"
         
         # Create business dev agent
         # Add web browsing for current data if needed

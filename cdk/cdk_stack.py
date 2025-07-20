@@ -1,3 +1,4 @@
+import json
 from aws_cdk import (
     # Duration,
     Stack,
@@ -39,18 +40,21 @@ class CdkStack(Stack):
                                                   generate_secret=True
                                                   )
 
-        # Store Cognito parameters in a Secrets Manager secret
-        secret = secretsmanager.Secret(self, f"{prefix}ParamCognitoSecret",
-                                       secret_object_value={
-                                           "pool_id": SecretValue.unsafe_plain_text(user_pool.user_pool_id),
-                                           "app_client_id": SecretValue.unsafe_plain_text(user_pool_client.user_pool_client_id),
-                                           "app_client_secret": user_pool_client.user_pool_client_secret
-                                       },
-                                       # This secret name should be identical
-                                       # to the one defined in the Streamlit
-                                       # container
-                                       secret_name=f"{Config.SECRETS_MANAGER_ID}-{env_name}"
-                                       )
+        # Always use existing secret if it exists
+        secret_name = f"{Config.SECRETS_MANAGER_ID}-{env_name}"
+        
+        # Use a different logical ID to avoid conflict with existing resource
+        # This is the key change - using ExistingParamCognitoSecret instead of ParamCognitoSecret
+        secret = secretsmanager.Secret.from_secret_name_v2(
+            self, f"{prefix}ExistingParamCognitoSecret",
+            secret_name=secret_name
+        )
+        
+        # Note: We're not updating the secret automatically anymore.
+        # After deployment, you'll need to manually update the secret with the new Cognito details:
+        # - User pool ID: {user_pool.user_pool_id}
+        # - App client ID: {user_pool_client.user_pool_client_id}
+        # This can be done through the AWS Console or using the AWS CLI.
 
 
         # VPC for ALB and ECS cluster
@@ -104,8 +108,8 @@ class CdkStack(Stack):
         fargate_task_definition = ecs.FargateTaskDefinition(
             self,
             f"{prefix}WebappTaskDef",
-            memory_limit_mib=512,
-            cpu=256,
+            memory_limit_mib=1024,
+            cpu=512,
         )
 
         # Build Dockerfile from local folder and push to ECR

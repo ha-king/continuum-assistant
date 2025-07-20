@@ -1,5 +1,5 @@
 from strands import Agent, tool
-from web_browser_assistant import web_browser_assistant
+from realtime_data_access import enhance_query_with_realtime
 
 AWS_SYSTEM_PROMPT = """
 You are AWSAssist, a specialized AWS cloud best-practices expert. Your role is to:
@@ -43,27 +43,11 @@ def aws_assistant(query: str) -> str:
     """
     try:
         print("Routed to AWS Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "aws")
         
         # Format query for the AWS agent
-        formatted_query = f"Provide expert AWS guidance and best practices for: {query}"
+        formatted_query = f"Provide expert AWS guidance and best practices for: {enhanced_query}"
         
-        # Create AWS agent
-        # Add web browsing for current data if needed
-
-        if any(word in query.lower() for word in ['current', 'latest', 'today', 'recent', 'now']):
-
-            try:
-
-                web_data = web_browser_assistant(f"Current research data: {query}")
-
-                formatted_query += f"\n\nCurrent data from web: {web_data}"
-
-            except:
-
-                pass
-
-        
-
         aws_agent = Agent(
             system_prompt=AWS_SYSTEM_PROMPT,
             tools=[],

@@ -1,43 +1,52 @@
 import streamlit as st
 import os
+import time
 from strands import Agent
 from strands_tools import file_read, file_write, editor, use_llm, memory, mem0_memory
-from english_assistant import english_assistant
-from language_assistant import language_assistant
-from math_assistant import math_assistant
-from computer_science_assistant import computer_science_assistant
-from financial_assistant import financial_assistant
-from aws_assistant import aws_assistant
-from business_dev_assistant import business_dev_assistant
-from lafayette_economic_assistant import lafayette_economic_assistant
-from research_assistant import research_assistant
-from louisiana_legal_assistant import louisiana_legal_assistant
-from web_browser_assistant import web_browser_assistant
-from no_expertise import general_assistant
-from psychology_assistant import psychology_assistant
-from cryptography_assistant import cryptography_assistant
-from blockchain_assistant import blockchain_assistant
-from cryptocurrency_assistant import cryptocurrency_assistant
-from tokenomics_assistant import tokenomics_assistant
-from economics_assistant import economics_assistant
-from cybersecurity_offense_assistant import cybersecurity_offense_assistant
-from cybersecurity_defense_assistant import cybersecurity_defense_assistant
-from web3_assistant import web3_assistant
-from entrepreneurship_assistant import entrepreneurship_assistant
-from formula1_assistant import formula1_assistant
-from ai_assistant import ai_assistant
-from microchip_supply_chain_assistant import microchip_supply_chain_assistant
-from opensource_supply_chain_assistant import opensource_supply_chain_assistant
-from nuclear_energy_assistant import nuclear_energy_assistant
-from louisiana_vc_assistant import louisiana_vc_assistant
-from data_acquisition_assistant import data_acquisition_assistant
-from data_analysis_assistant import data_analysis_assistant
+from model_options import get_model_options, get_default_model
+from auto_learning_system import initialize_auto_learning, trigger_manual_learning
+from enhanced_learning_system import initialize_enhanced_learning, trigger_enhanced_learning
+from personalized_intelligence import get_personalized_response, get_user_insights
+from proactive_intelligence import initialize_proactive_intelligence, get_proactive_alerts, get_intelligence_brief, trigger_market_analysis
+# Import lazy loading wrapper
+from lazy_assistant import LazyAssistant
+
+# Lazy load unified core domain assistants
+business_finance_assistant = LazyAssistant('unified_assistants', 'business_finance_assistant')
+tech_security_assistant = LazyAssistant('unified_assistants', 'tech_security_assistant')
+research_knowledge_assistant = LazyAssistant('unified_assistants', 'research_knowledge_assistant')
+specialized_industries_assistant = LazyAssistant('unified_assistants', 'specialized_industries_assistant')
+universal_assistant = LazyAssistant('unified_assistants', 'universal_assistant')
+
+# Keep specialized assistants for direct routing
+formula1_assistant = LazyAssistant('formula1_assistant', 'formula1_assistant')
+aviation_assistant = LazyAssistant('aviation_assistant', 'aviation_assistant')
+aviation_assistant_claude = LazyAssistant('claude_aviation_assistant', 'aviation_assistant_claude')
+
+# Legacy assistants (for backward compatibility)
+financial_assistant = LazyAssistant('consolidated_assistants', 'financial_assistant')
+security_assistant = LazyAssistant('consolidated_assistants', 'security_assistant')
+business_assistant = LazyAssistant('consolidated_assistants', 'business_assistant')
+tech_assistant = LazyAssistant('consolidated_assistants', 'tech_assistant')
+research_assistant = LazyAssistant('consolidated_assistants', 'research_assistant')
+sports_assistant = LazyAssistant('consolidated_assistants', 'sports_assistant')
+english_assistant = LazyAssistant('english_assistant', 'english_assistant')
+math_assistant = LazyAssistant('math_assistant', 'math_assistant')
+aws_assistant = LazyAssistant('aws_assistant', 'aws_assistant')
+louisiana_legal_assistant = LazyAssistant('louisiana_legal_assistant', 'louisiana_legal_assistant')
+general_assistant = LazyAssistant('no_expertise', 'general_assistant')
+web_browser_assistant = LazyAssistant('web_browser_assistant', 'web_browser_assistant')
 from utils.auth import Auth
 from config_file import Config
+
+# Import conversation storage
+from conversation_storage import conversation_storage, load_user_conversation, save_user_conversation
 
 # Authentication setup
 if os.environ.get("LOCAL_DEV"):
     st.write("🔓 **Local Development Mode** - Authentication bypassed")
+    # Set a default user ID for local development
+    st.session_state.user_id = "local-dev-user"
 else:
     try:
         # Detect environment from environment variable or default to prod
@@ -54,72 +63,94 @@ else:
         
         if not is_logged_in:
             st.stop()
+        
+        # Store user ID in session state for conversation persistence
+        if 'user_id' not in st.session_state and authenticator.is_logged_in():
+            username = authenticator.get_username()
+            if username:
+                st.session_state.user_id = username
+                # Load user's conversation history
+                load_user_conversation(st.session_state.user_id)
             
     except Exception as e:
         st.error(f"Authentication error: {str(e)}")
         st.stop()
 
+def get_current_datetime():
+    """Get current datetime formatted for user's timezone"""
+    from datetime import datetime
+    import pytz
+    
+    # Force current actual datetime
+    current_time = datetime.now()
+    
+    user_tz = st.session_state.get('user_timezone', 'UTC')
+    try:
+        tz = pytz.timezone(user_tz)
+        user_time = current_time.astimezone(tz)
+        return user_time.strftime("%A, %B %d, %Y at %I:%M %p %Z")
+    except:
+        return current_time.strftime("%A, %B %d, %Y at %I:%M %p UTC")
+
+def get_user_context():
+    """Get user context including location and timezone"""
+    from datetime import datetime
+    
+    # Provide context without specific dates that confuse the model
+    context = "You have access to current real-time market data.\n"
+    
+    location = st.session_state.get('user_location')
+    if location:
+        context += f"User location: Latitude {location['latitude']:.4f}, Longitude {location['longitude']:.4f}\n"
+    
+    return context + "\n"
+
+from response_processor import process_response
+
+# Import telemetry integration
+try:
+    from app_telemetry import (
+        track_app_startup, track_user_query, track_assistant_response,
+        track_router_decision, track_tab_change, track_error, TELEMETRY_ENABLED
+    )
+    if TELEMETRY_ENABLED:
+        print("Telemetry enabled")
+        track_app_startup()
+except ImportError:
+    # Create dummy functions if telemetry module is not available
+    def track_app_startup(): pass
+    def track_user_query(*args, **kwargs): pass
+    def track_assistant_response(*args, **kwargs): pass
+    def track_router_decision(*args, **kwargs): pass
+    def track_tab_change(*args, **kwargs): pass
+    def track_error(*args, **kwargs): pass
+    TELEMETRY_ENABLED = False
+    print("Telemetry disabled")
+
 TEACHER_SYSTEM_PROMPT = """
-You are TeachAssist, a sophisticated educational orchestrator with ACTIVE WEB BROWSING CAPABILITIES. Your role is to:
+You are TeachAssist, an AI orchestrator with real-time data access and PREDICTION capabilities.
 
-1. Analyze incoming student queries and determine the most appropriate specialized agent to handle them:
+AVAILABLE CORE DOMAIN ASSISTANTS:
+- Business & Finance Assistant: finance, crypto, economics, business development, entrepreneurship, investments
+- Technology & Security Assistant: programming, AI, blockchain, web3, cybersecurity, AWS, cloud computing
+- Research & Knowledge Assistant: internet research, data analysis, math, English, writing, general knowledge
+- Specialized Industries Assistant: aviation, Formula 1, sports, legal, automotive industries
+- Universal Assistant: predictions, forecasting, and general queries across all domains
 
-   AVAILABLE ASSISTANTS (ALL FUNCTIONAL):
-   - Math Assistant: For mathematical calculations, problems, and concepts
-   - English Assistant: For writing, grammar, literature, and composition
-   - Language Assistant: For translation and language-related queries
-   - Computer Science Assistant: For programming, algorithms, data structures, and code execution
-   - Financial Assistant: For financial records, reports, accounting, and business finance
-   - AWS Assistant: For cloud architecture, AWS services, and best practices
-   - Business Dev Assistant: For business development, partnerships, and growth strategies
-   - Lafayette Economic Assistant: For economic opportunities in Lafayette, Louisiana
-   - Research Assistant: *** ACTIVE AND FUNCTIONAL *** For internet research and web-based information gathering with real-time data access
-   - Louisiana Legal Assistant: For Louisiana business legal matters and compliance
-   - Web Browser Assistant: *** ACTIVE AND FUNCTIONAL *** For real-time website browsing, content analysis, company research, and any website-related queries
-   - General Assistant: For all other topics outside these specialized domains
+SPECIALIZED ASSISTANTS (for specific queries):
+- Formula 1 Assistant: F1 racing with live data from multiple sources (OpenF1, Ergast, ESPN)
+- Aviation Assistant: flight data, FAA information, air traffic, aircraft tracking
 
-   IMPORTANT: The Web Browser Assistant IS AVAILABLE AND FUNCTIONAL - use it for ANY website-related queries.
+ROUTING RULES:
+1. For PREDICTION/FORECASTING queries (predict, forecast, will, future, next, expect), use Universal Assistant
+2. For F1/Formula 1/racing queries, use Formula 1 Assistant
+3. For AVIATION/FLIGHT queries (aircraft, flight, N-numbers, airport), use Aviation Assistant
+4. For BUSINESS/FINANCE queries, use Business & Finance Assistant
+5. For TECHNOLOGY/SECURITY queries, use Technology & Security Assistant
+6. For RESEARCH/KNOWLEDGE queries, use Research & Knowledge Assistant
+7. For topics without specific domain match, use Universal Assistant
 
-2. Key Responsibilities:
-   - Accurately classify student queries by subject area
-   - Route requests to the appropriate specialized agent
-   - Maintain context and coordinate multi-step problems
-   - Ensure cohesive responses when multiple agents are needed
-
-3. Decision Protocol:
-   - If query involves calculations/numbers → Math Assistant
-   - If query involves writing/literature/grammar → English Assistant
-   - If query involves translation → Language Assistant
-   - If query involves programming/coding/algorithms/computer science → Computer Science Assistant
-   - If query involves finance/accounting/business reports → Financial Assistant
-   - If query involves AWS/cloud architecture/best practices → AWS Assistant
-   - If query involves business development/partnerships/growth → Business Dev Assistant
-   - If query involves Lafayette LA economic opportunities → Lafayette Economic Assistant
-   - If query involves research/web search/current information/real-time data → Research Assistant
-   - If query involves Louisiana legal/business law matters → Louisiana Legal Assistant
-   - If query involves browsing websites/viewing web content/website analysis/company information → Web Browser Assistant
-   - If query mentions specific websites (like .com, .org) or asks to "browse" or "visit" → Web Browser Assistant
-   - If query asks about company offerings, services, or business analysis → Web Browser Assistant
-   - If query is outside these specialized areas → General Assistant
-   - For complex queries, coordinate multiple agents as needed
-
-*** MANDATORY WEB BROWSING RULES - NO EXCEPTIONS ***:
-- ANY query containing "browse", "website", "visit", ".com", ".org", "infascination", "company", "current", "today", "now", "latest" → IMMEDIATELY use web_browser_assistant or research_assistant tool
-- ANY query asking about specific companies or their information → IMMEDIATELY use web_browser_assistant tool
-- ANY query requesting website analysis or company research → IMMEDIATELY use web_browser_assistant tool
-- If user asks to browse ANY website → CALL web_browser_assistant(query) IMMEDIATELY
-- If user mentions ANY company name → CALL web_browser_assistant(query) IMMEDIATELY
-
-*** CRITICAL: You HAVE web browsing capabilities through the web_browser_assistant tool. NEVER claim you don't have web browsing capabilities. ***
-
-*** MANDATORY ROUTING CHECK ***:
-1. Does the query mention websites, companies, browsing, or .com/.org domains? → YES = CALL web_browser_assistant(query)
-2. Does the query ask about company information or services? → YES = CALL web_browser_assistant(query)
-3. Does the query request website analysis? → YES = CALL web_browser_assistant(query)
-
-IF ANY OF THE ABOVE = YES, YOU MUST USE THE WEB BROWSER ASSISTANT TOOL.
-
-Always confirm your understanding before routing to ensure accurate assistance.
+The Universal Assistant can handle predictions for ANY topic using historical + real-time data.
 """
 
 def determine_action(agent, query):
@@ -129,7 +160,13 @@ def determine_action(agent, query):
         return "knowledge"
     return "teacher"
 
-def run_kb_agent(query):
+from batch_knowledge import store_knowledge_batch, flush_knowledge_queue
+
+def store_knowledge(content, query_context):
+    """Store non-redundant information in knowledge base using batch processing"""
+    store_knowledge_batch(content, query_context)
+
+def run_kb_agent(query, datetime_context):
     if not os.environ.get("KNOWLEDGE_BASE_ID"):
         return "Knowledge base is not configured. Please use the teacher mode for educational questions."
     
@@ -142,67 +179,86 @@ def run_kb_agent(query):
         else:
             result = agent.tool.memory(action="retrieve", query=query, min_score=0.4, max_results=9)
             answer = agent.tool.use_llm(
-                prompt=f"User question: \"{query}\"\n\nInformation: {str(result)}\n\nProvide a helpful answer:",
+                prompt=f"{datetime_context}User question: \"{query}\"\n\nInformation: {str(result)}\n\nProvide a helpful answer:",
                 system_prompt="You are a helpful knowledge assistant that provides clear, concise answers based on information retrieved from a knowledge base."
             )
+            
+            # Store new knowledge from the response
+            store_knowledge(str(answer), f"Query: {query}")
+            
             return str(answer)
     except Exception:
         return "Knowledge base is not configured. Please use the teacher mode for educational questions."
 
-def run_memory_agent(query):
-    agent = Agent(system_prompt="You are a personal assistant that maintains context by remembering user details.", tools=[mem0_memory, use_llm])
+def run_memory_agent(query, datetime_context):
+    agent = Agent(system_prompt=f"You are a personal assistant that maintains context by remembering user details. {datetime_context}", tools=[mem0_memory, use_llm])
     response = agent(query)
     return str(response)
 
 st.title("🔒 Son of Anton")
 
-# Get user's timezone from browser JavaScript
-if 'user_timezone' not in st.session_state:
+# Initialize enhanced intelligence systems
+if 'intelligence_initialized' not in st.session_state:
+    auto_status = initialize_auto_learning()
+    enhanced_status = initialize_enhanced_learning()
+    proactive_status = initialize_proactive_intelligence()
+    st.session_state.intelligence_initialized = True
+    st.success("🤖 Advanced Intelligence Systems Active")
+    st.info("✨ Cross-domain synthesis, personalization, and proactive monitoring enabled")
+
+# Get user's timezone and geolocation from browser JavaScript
+if 'user_timezone' not in st.session_state or 'user_location' not in st.session_state:
     st.components.v1.html("""
     <script>
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     window.parent.postMessage({type: 'timezone', value: timezone}, '*');
+    
+    // Get geolocation if available
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const location = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    accuracy: position.coords.accuracy
+                };
+                window.parent.postMessage({type: 'location', value: location}, '*');
+            },
+            function(error) {
+                window.parent.postMessage({type: 'location', value: null}, '*');
+            }
+        );
+    }
     </script>
     """, height=0)
     
-    # Listen for timezone message
-    st.session_state.user_timezone = 'UTC'  # Default fallback
+    # Set defaults
+    st.session_state.user_timezone = 'UTC'
+    st.session_state.user_location = None
 
-if "tab_ids" not in st.session_state:
-    st.session_state.tab_ids = [0]
-if "next_tab_id" not in st.session_state:
-    st.session_state.next_tab_id = 1
+def initialize_session_state():
+    """Initialize all session state variables in one place"""
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-col1, col2, col3 = st.columns([5, 1, 1])
-with col1:
-    tab_names = [f"Chat {tid+1}" for tid in st.session_state.tab_ids]
-    tabs = st.tabs(tab_names)
-with col2:
-    if st.button("+ Tab"):
-        st.session_state.tab_ids.append(st.session_state.next_tab_id)
-        st.session_state.next_tab_id += 1
-        st.rerun()
-with col3:
-    if st.button("✕ Close") and len(st.session_state.tab_ids) > 1:
-        st.session_state.tab_ids.pop()
-        st.rerun()
+# Initialize session state
+initialize_session_state()
 
 with st.sidebar:
     # Add logout button
-    if st.button("🚪 Logout"):
+    if st.button("🚪 Logout") and 'authenticator' in locals():
         authenticator.logout()
+        # Clear user session data
+        if 'user_id' in st.session_state:
+            del st.session_state.user_id
+        if 'messages' in st.session_state:
+            st.session_state.messages = []
         st.rerun()
     
     st.header("Configuration")
     
-    model_options = [
-        "us.amazon.nova-pro-v1:0",
-        "us.amazon.nova-lite-v1:0", 
-        "us.amazon.nova-micro-v1:0",
-        "anthropic.claude-3-5-haiku-20241022-v1:0",
-        "anthropic.claude-3-7-sonnet-20250219-v1:0",
-        "anthropic.claude-sonnet-4-20250514-v1:0"
-    ]
+    # Get model options from centralized configuration
+    model_options = get_model_options()
     selected_model = st.selectbox("Bedrock Model:", model_options)
     
     opensearch_available = bool(os.environ.get("OPENSEARCH_HOST"))
@@ -212,187 +268,256 @@ with st.sidebar:
     
     memory_backend = st.selectbox("Memory Backend:", memory_options)
     
-    st.subheader("Teacher Agents")
-    use_math = st.checkbox("Math Assistant", value=True)
-    use_english = st.checkbox("English Assistant", value=True)
-    use_language = st.checkbox("Language Assistant", value=True)
-    use_cs = st.checkbox("Computer Science Assistant", value=True)
-    use_financial = st.checkbox("Financial Assistant", value=True)
-    use_aws = st.checkbox("AWS Assistant", value=True)
-    use_business_dev = st.checkbox("Business Dev Assistant", value=True)
-    use_lafayette_economic = st.checkbox("Lafayette Economic Assistant", value=True)
-    use_research = st.checkbox("Research Assistant", value=True)
-    use_louisiana_legal = st.checkbox("Louisiana Legal Assistant", value=True)
-    use_web_browser = st.checkbox("Web Browser Assistant", value=True)
-    use_general = st.checkbox("General Assistant", value=True)
+    assistant_mode = st.selectbox(
+        "Assistant Mode:",
+        ["Core Domains (Auto-Route)", "Advanced Configuration"]
+    )
     
-    st.subheader("Specialized Experts")
-    use_psychology = st.checkbox("Psychology Assistant", value=True)
-    use_cryptography = st.checkbox("Cryptography Assistant", value=True)
-    use_blockchain = st.checkbox("Blockchain Assistant", value=True)
-    use_cryptocurrency = st.checkbox("Cryptocurrency Assistant", value=True)
-    use_tokenomics = st.checkbox("Tokenomics Assistant", value=True)
-    use_economics = st.checkbox("Economics Assistant", value=True)
-    use_cybersec_offense = st.checkbox("Cybersecurity Offense Assistant", value=True)
-    use_cybersec_defense = st.checkbox("Cybersecurity Defense Assistant", value=True)
-    use_web3 = st.checkbox("Web3 Assistant", value=True)
-    use_entrepreneurship = st.checkbox("Entrepreneurship Assistant", value=True)
-    use_formula1 = st.checkbox("Formula 1 Assistant", value=True)
-    use_ai = st.checkbox("AI Assistant", value=True)
-    use_microchip = st.checkbox("Microchip Supply Chain Assistant", value=True)
-    use_opensource = st.checkbox("Open Source Supply Chain Assistant", value=True)
-    use_nuclear = st.checkbox("Nuclear Energy Assistant", value=True)
-    use_louisiana_vc = st.checkbox("Louisiana VC Assistant", value=True)
-    use_data_acquisition = st.checkbox("Data Acquisition Assistant", value=True)
-    use_data_analysis = st.checkbox("Data Analysis Assistant", value=True)
+    if assistant_mode == "Advanced Configuration":
+        with st.expander("🎯 Core Domain Assistants", expanded=True):
+            use_business_finance = st.checkbox("Business & Finance", value=True)
+            use_tech_security = st.checkbox("Technology & Security", value=True)
+            use_research_knowledge = st.checkbox("Research & Knowledge", value=True)
+            use_specialized_industries = st.checkbox("Specialized Industries", value=True)
+            use_universal = st.checkbox("Universal", value=True)
+        
+        with st.expander("🔍 Legacy Assistants", expanded=False):
+            use_math = st.checkbox("Math", value=False)
+            use_english = st.checkbox("English", value=False)
+            use_cs = st.checkbox("Computer Science", value=False)
+            use_financial = st.checkbox("Financial", value=False)
+            use_aws = st.checkbox("AWS", value=False)
+            use_research = st.checkbox("Research", value=False)
+            use_web_browser = st.checkbox("Web Browser", value=False)
+            use_business_dev = st.checkbox("Business Development", value=False)
+            use_business_contact = st.checkbox("Business Contacts", value=False)
+            use_company_intelligence = st.checkbox("Company Intelligence", value=False)
+            use_economics = st.checkbox("Economics", value=False)
+            use_entrepreneurship = st.checkbox("Entrepreneurship", value=False)
+            use_geopolitical = st.checkbox("Geopolitical", value=False)
+            use_international_finance = st.checkbox("International Finance", value=False)
+            use_louisiana_legal = st.checkbox("Louisiana Legal", value=False)
+            use_public_records = st.checkbox("Public Records", value=False)
+            use_ai = st.checkbox("AI", value=False)
+            use_blockchain = st.checkbox("Blockchain", value=False)
+            use_cryptocurrency = st.checkbox("Cryptocurrency", value=False)
+            use_cybersec_defense = st.checkbox("Cybersecurity", value=False)
+            use_data_analysis = st.checkbox("Data Analysis", value=False)
+            use_predictive_analysis = st.checkbox("Predictive Analysis", value=False)
+        
+        # Set unused variables to False in advanced mode
+        use_general = st.checkbox("General", value=False)
+    else:
+        # Core domain assistants enabled in auto-route mode
+        use_business_finance = use_tech_security = use_research_knowledge = True
+        use_specialized_industries = use_universal = True
+        
+        # Legacy assistants disabled in auto-route mode
+        use_math = use_english = use_cs = use_financial = use_aws = False
+        use_business_dev = use_research = use_louisiana_legal = False
+        use_web_browser = use_general = False
+        use_economics = use_entrepreneurship = use_ai = False
+        use_blockchain = use_cryptocurrency = use_cybersec_defense = False
+        use_business_contact = use_company_intelligence = use_geopolitical = False
+        use_international_finance = use_public_records = False
+        use_data_analysis = use_predictive_analysis = False
     
     st.divider()
-    if st.button("🛑 Stop Session", type="primary"):
-        st.stop()
+    active_count = sum([use_business_finance, use_tech_security, use_research_knowledge, 
+                        use_specialized_industries, use_universal])
+    legacy_count = sum([use_math, use_english, use_cs, use_financial, use_aws, 
+                        use_business_dev, use_research, use_louisiana_legal, 
+                        use_web_browser, use_general])
+    st.caption(f"Active Assistants: {active_count} core domains, {legacy_count} legacy")
 
-st.write("🔐 **Authenticated Access** - Ask a question in any subject area, and I'll route it to the appropriate specialist.")
+# Initialize teacher tools with core domain assistants
+teacher_tools = [
+    business_finance_assistant,  # Core Domain 1: Business & Finance
+    tech_security_assistant,     # Core Domain 2: Technology & Security
+    research_knowledge_assistant, # Core Domain 3: Research & Knowledge
+    specialized_industries_assistant, # Core Domain 4: Specialized Industries
+    universal_assistant,         # Core Domain 5: Universal Assistant
+    formula1_assistant,          # Specialized: Formula 1
+    aviation_assistant           # Specialized: Aviation
+]
 
-teacher_tools = []
-if use_math:
-    teacher_tools.append(math_assistant)
-if use_language:
-    teacher_tools.append(language_assistant)
-if use_english:
-    teacher_tools.append(english_assistant)
-if use_cs:
-    teacher_tools.append(computer_science_assistant)
-if use_financial:
-    teacher_tools.append(financial_assistant)
-if use_aws:
-    teacher_tools.append(aws_assistant)
-if use_business_dev:
-    teacher_tools.append(business_dev_assistant)
-if use_lafayette_economic:
-    teacher_tools.append(lafayette_economic_assistant)
-if use_research:
-    teacher_tools.append(research_assistant)
-if use_louisiana_legal:
-    teacher_tools.append(louisiana_legal_assistant)
-if use_web_browser:
-    teacher_tools.append(web_browser_assistant)
-if use_general:
-    teacher_tools.append(general_assistant)
-if use_psychology:
-    teacher_tools.append(psychology_assistant)
-if use_cryptography:
-    teacher_tools.append(cryptography_assistant)
-if use_blockchain:
-    teacher_tools.append(blockchain_assistant)
-if use_cryptocurrency:
-    teacher_tools.append(cryptocurrency_assistant)
-if use_tokenomics:
-    teacher_tools.append(tokenomics_assistant)
-if use_economics:
-    teacher_tools.append(economics_assistant)
-if use_cybersec_offense:
-    teacher_tools.append(cybersecurity_offense_assistant)
-if use_cybersec_defense:
-    teacher_tools.append(cybersecurity_defense_assistant)
-if use_web3:
-    teacher_tools.append(web3_assistant)
-if use_entrepreneurship:
-    teacher_tools.append(entrepreneurship_assistant)
-if use_formula1:
-    teacher_tools.append(formula1_assistant)
-if use_ai:
-    teacher_tools.append(ai_assistant)
-if use_microchip:
-    teacher_tools.append(microchip_supply_chain_assistant)
-if use_opensource:
-    teacher_tools.append(opensource_supply_chain_assistant)
-if use_nuclear:
-    teacher_tools.append(nuclear_energy_assistant)
-if use_louisiana_vc:
-    teacher_tools.append(louisiana_vc_assistant)
-if use_data_acquisition:
-    teacher_tools.append(data_acquisition_assistant)
-if use_data_analysis:
-    teacher_tools.append(data_analysis_assistant)
+# Add legacy assistants based on configuration if in advanced mode
+if assistant_mode == "Advanced Configuration":
+    if use_math:
+        teacher_tools.append(math_assistant)
+    if use_english:
+        teacher_tools.append(english_assistant)
+    if use_financial or use_cryptocurrency or use_economics:
+        teacher_tools.append(financial_assistant)
+    if use_aws:
+        teacher_tools.append(aws_assistant)
+    if use_business_dev or use_entrepreneurship:
+        teacher_tools.append(business_assistant)
+    if use_cs or use_ai or use_blockchain:
+        teacher_tools.append(tech_assistant)
+    if use_cybersec_defense:
+        teacher_tools.append(security_assistant)
+    if use_research:
+        teacher_tools.append(research_assistant)
+    if use_louisiana_legal:
+        teacher_tools.append(louisiana_legal_assistant)
+    if use_web_browser:
+        teacher_tools.append(web_browser_assistant)
+    if use_general:
+        teacher_tools.append(general_assistant)
 
-teacher_agent = Agent(
-    system_prompt=TEACHER_SYSTEM_PROMPT,
-    callback_handler=None,
-    tools=teacher_tools
-)
+# Create teacher agent with datetime awareness
+def create_teacher_agent_with_datetime():
+    from agent_pool import get_cached_agent
+    
+    user_context = get_user_context()
+    enhanced_prompt = f"""{TEACHER_SYSTEM_PROMPT}
 
-if "tab_messages" not in st.session_state:
-    st.session_state.tab_messages = {}
+CONTEXT: {user_context}
+Include current date/time when calling assistants.
 
-for i, tab in enumerate(tabs):
-    with tab:
-        tab_id = st.session_state.tab_ids[i]
-        if tab_id not in st.session_state.tab_messages:
-            st.session_state.tab_messages[tab_id] = []
-        
-        if st.button("🗑️ Clear Chat", key=f"clear_{tab_id}"):
-            st.session_state.tab_messages[tab_id] = []
-            st.rerun()
-        
-        for message in st.session_state.tab_messages[tab_id]:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
-        
-        if prompt := st.chat_input(f"Ask your question here... (Tab {tab_id+1})", key=f"chat_input_{tab_id}"):
-            st.session_state.tab_messages[tab_id].append({"role": "user", "content": prompt})
+For time/date queries, respond directly with current time.
+"""
+    return get_cached_agent(enhanced_prompt, teacher_tools)
+
+teacher_agent = create_teacher_agent_with_datetime()
+
+# Display chat interface
+if st.button("🗑️ Clear Chat"):
+    st.session_state.messages = []
+    # Start a new conversation without deleting the old one
+    user_id = st.session_state.get('user_id', 'anonymous')
+    if user_id != 'anonymous':
+        conversation_storage.start_new_conversation(user_id)
+    st.rerun()
+
+# Display chat messages
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Chat input
+if prompt := st.chat_input("Ask your question here..."):
+            # Get user ID for tracking
+            user_id = st.session_state.get('user_id', 'anonymous')
+            
+            # Track user query
+            track_user_query(user_id, prompt, 0)  # Use 0 as default tab_id
+            
+            # Add timestamp to user message for persistence
+            message_with_timestamp = {
+                "role": "user", 
+                "content": prompt,
+                "timestamp": int(time.time())
+            }
+            st.session_state.messages.append(message_with_timestamp)
+            
+            # Save conversation after user message
+            save_user_conversation(user_id)
+            
             with st.chat_message("user"):
                 st.markdown(prompt)
             
             with st.chat_message("assistant"):
                 try:
+                    # Get current datetime and user context for orchestrator and all agents
+                    user_context = get_user_context()
+                    datetime_context = user_context
+                    
                     router_agent = Agent(tools=[use_llm])
                     action = determine_action(router_agent, prompt)
                     
-                    from datetime import datetime
-                    import pytz
-                    
-                    # Get user's timezone from browser
-                    user_tz = st.session_state.get('user_timezone', 'UTC')
-                    try:
-                        tz = pytz.timezone(user_tz)
-                        user_time = datetime.now(tz)
-                        current_datetime = user_time.strftime("%A, %B %d, %Y at %I:%M %p %Z")
-                    except:
-                        current_datetime = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p UTC")
-                    
-                    context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.tab_messages[tab_id][-10:]])
-                    datetime_context = f"Current date and time for user: {current_datetime}\n\n"
+                    context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in st.session_state.messages[-10:]])
                     full_prompt = f"{datetime_context}Context: {context}\n\nCurrent question: {prompt}" if context else f"{datetime_context}Current question: {prompt}"
                     
+                    # Store user query context for knowledge base
+                    query_context = f"User query at {get_current_datetime()}: {prompt}"
+                    
                     if action == "teacher":
-                        if any(word in prompt.lower() for word in ['browse', 'infascination', '.com', 'website', 'visit', 'current', 'today', 'now', 'latest', 'real-time']):
-                            try:
-                                # Try web browser first, fallback to research assistant
-                                if any(word in prompt.lower() for word in ['.com', 'website', 'browse', 'visit']):
-                                    content = web_browser_assistant(prompt)
-                                else:
-                                    content = research_assistant(prompt)
-                            except Exception as e:
-                                try:
-                                    content = research_assistant(prompt)
-                                except:
-                                    response = teacher_agent(full_prompt)
-                                    content = str(response)
+                        from unified_router import unified_route
+                        
+                        # Use Claude 4.0 for aviation if selected
+                        use_claude = selected_model == "anthropic.claude-4-0:0"
+                        
+                        # Map assistants to domains using the new unified structure
+                        assistants = {
+                            # Core domain assistants
+                            'business_finance': business_finance_assistant,
+                            'tech_security': tech_security_assistant,
+                            'research_knowledge': research_knowledge_assistant,
+                            'specialized_industries': specialized_industries_assistant,
+                            'universal': universal_assistant,
+                            
+                            # Specialized assistants for direct routing
+                            'aviation': aviation_assistant_claude if use_claude else aviation_assistant,
+                            'formula1': formula1_assistant,
+                            
+                            # Legacy assistants for backward compatibility
+                            'financial': financial_assistant,
+                            'sports': sports_assistant,
+                            'web_browser': web_browser_assistant,
+                            'research': research_assistant
+                        }
+                        
+                        # Start timing for response time tracking
+                        start_time = time.time()
+                        
+                        # Unified routing with tracking
+                        assistant_func, enhanced_prompt = unified_route(prompt, get_current_datetime(), assistants)
+                        
+                        # Track routing decision
+                        if assistant_func:
+                            assistant_name = assistant_func.__name__ if hasattr(assistant_func, "__name__") else str(assistant_func)
+                            matched_rule = "direct" if assistant_name == "direct_response" else assistant_name.replace("_assistant", "")
+                            track_router_decision(prompt, matched_rule, assistant_name, 0.8)
+                        
+                        if assistant_func:
+                            content = assistant_func(enhanced_prompt)
+                        elif enhanced_prompt:
+                            content = enhanced_prompt  # Direct response (like time queries)
                         else:
-                            response = teacher_agent(full_prompt)
-                            content = str(response)
+                            # Default to teacher agent with streaming
+                            from streaming import get_streaming_response
+                            teacher_agent = create_teacher_agent_with_datetime()
+                            content = get_streaming_response(teacher_agent, full_prompt)
+                            store_knowledge(content, query_context)
                     else:
                         if memory_backend == "OpenSearch Memory":
-                            content = run_memory_agent(full_prompt)
+                            content = run_memory_agent(full_prompt, datetime_context)
                         else:
-                            kb_result = run_kb_agent(full_prompt)
+                            kb_result = run_kb_agent(full_prompt, datetime_context)
                             if "Knowledge base is not configured" in kb_result:
+                                # Recreate teacher agent with fresh datetime for each request
+                                teacher_agent = create_teacher_agent_with_datetime()
                                 response = teacher_agent(full_prompt)
                                 content = str(response)
+                                
+                                # Store knowledge from response
+                                store_knowledge(content, query_context)
                             else:
                                 content = kb_result
                     
-                    # Display main content
-                    st.markdown(content)
+                    # Get user ID for personalization
+                    user_id = st.session_state.get('user_id', 'anonymous')
+                    
+                    # Apply personalization
+                    personalized_content = get_personalized_response(user_id, prompt, content)
+                    
+                    # Process the response (clean and format)
+                    user_data = {"user_id": user_id, "location": st.session_state.get('user_location')}
+                    processed_content = process_response(personalized_content, prompt, user_data)
+                    
+                    # Calculate response time
+                    response_time_ms = int((time.time() - start_time) * 1000)
+                    
+                    # Track assistant response
+                    assistant_name = "direct_response" if enhanced_prompt and not assistant_func else \
+                                   (assistant_func.__name__ if assistant_func and hasattr(assistant_func, "__name__") \
+                                    else (action if action else "unknown"))
+                    track_assistant_response(user_id, prompt, assistant_name, response_time_ms, 0)  # Use 0 as default tab_id
+                    
+                    # Display processed content
+                    st.markdown(processed_content)
                     
                     # Add expandable reference section if references exist
                     if "**References Used:**" in content:
@@ -403,9 +528,40 @@ for i, tab in enumerate(tabs):
                                 st.markdown(references)
                                 st.markdown(f"**Assistant Used:** {action.title()} Mode")
                     
-                    st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": content})
+                    # Add timestamp to message for persistence
+                    message_with_timestamp = {
+                        "role": "assistant", 
+                        "content": processed_content,
+                        "timestamp": int(time.time())
+                    }
+                    st.session_state.messages.append(message_with_timestamp)
+                    
+                    # Save conversation to persistent storage
+                    user_id = st.session_state.get('user_id', 'anonymous')
+                    save_user_conversation(user_id)
+                    
+                    # Show user insights in sidebar
+                    if user_id != 'anonymous':
+                        with st.sidebar:
+                            with st.expander("👤 User Insights", expanded=False):
+                                insights = get_user_insights(user_id)
+                                st.json(insights)
                     
                 except Exception as e:
                     error_msg = f"An error occurred: {str(e)}"
                     st.markdown(error_msg)
-                    st.session_state.tab_messages[tab_id].append({"role": "assistant", "content": error_msg})
+                    
+                    # Add error message with timestamp
+                    error_message = {
+                        "role": "assistant", 
+                        "content": error_msg,
+                        "timestamp": int(time.time()),
+                        "error": True
+                    }
+                    st.session_state.messages.append(error_message)
+                    
+                    # Save conversation with error to persistent storage
+                    save_user_conversation(user_id)
+                    
+                    # Track error
+                    track_error(user_id, prompt, str(e), 0)  # Use 0 as default tab_id

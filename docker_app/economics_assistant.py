@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from web_browser_assistant import web_browser_assistant
 
 ECONOMICS_SYSTEM_PROMPT = """
@@ -38,8 +39,10 @@ def economics_assistant(query: str) -> str:
     """
     try:
         print("Routed to Economics Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "economics")
+
         
-        formatted_query = f"Provide expert economic analysis and guidance for: {query}"
+        formatted_query = f"Provide expert economic analysis and guidance for: {enhanced_query}"
         
         # Add web browsing for current data if needed
 

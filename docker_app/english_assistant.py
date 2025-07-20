@@ -1,5 +1,5 @@
 from strands import Agent, tool
-from web_browser_assistant import web_browser_assistant
+from realtime_data_access import enhance_query_with_realtime
 from strands_tools import file_read, file_write, editor
 import json
 
@@ -45,7 +45,9 @@ def english_assistant(query: str) -> str:
     
     try:
         print("Routed to English Assistant")
-
+        enhanced_query = enhance_query_with_realtime(query, "english")
+        formatted_query = f"Analyze and respond to this English language or literature question, providing clear explanations with examples where appropriate: {enhanced_query}"
+        
         english_agent = Agent(
             system_prompt=ENGLISH_ASSISTANT_SYSTEM_PROMPT,
             tools=[editor, file_read, file_write],

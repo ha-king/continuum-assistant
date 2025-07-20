@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from web_browser_assistant import web_browser_assistant
 
 LAFAYETTE_ECONOMIC_SYSTEM_PROMPT = """
@@ -45,9 +46,11 @@ def lafayette_economic_assistant(query: str) -> str:
     """
     try:
         print("Routed to Lafayette Economic Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "lafayette_economic")
+
         
         # Format query for the Lafayette economic agent
-        formatted_query = f"Provide specific guidance on Lafayette, Louisiana economic opportunities for: {query}"
+        formatted_query = f"Provide specific guidance on Lafayette, Louisiana economic opportunities for: {enhanced_query}"
         
         # Create Lafayette economic agent
         # Add web browsing for current data if needed

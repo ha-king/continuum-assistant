@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from web_browser_assistant import web_browser_assistant
 
 CYBERSECURITY_DEFENSE_SYSTEM_PROMPT = """
@@ -38,8 +39,10 @@ def cybersecurity_defense_assistant(query: str) -> str:
     """
     try:
         print("Routed to Cybersecurity Defense Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "cybersecurity_defense")
+
         
-        formatted_query = f"Provide expert defensive cybersecurity analysis and guidance for: {query}"
+        formatted_query = f"Provide expert defensive cybersecurity analysis and guidance for: {enhanced_query}"
         
         # Add web browsing for current data if needed
 

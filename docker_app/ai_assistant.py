@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from web_browser_assistant import web_browser_assistant
 
 AI_SYSTEM_PROMPT = """
@@ -38,8 +39,10 @@ def ai_assistant(query: str) -> str:
     """
     try:
         print("Routed to AI Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "ai")
+
         
-        formatted_query = f"Provide expert artificial intelligence analysis and guidance for: {query}"
+        formatted_query = f"Provide expert artificial intelligence analysis and guidance for: {enhanced_query}"
         
         # Add web browsing for current data if needed
 

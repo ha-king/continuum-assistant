@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from web_browser_assistant import web_browser_assistant
 from strands_tools import python_repl, shell, file_read, file_write, editor
 import json
@@ -50,6 +51,8 @@ def computer_science_assistant(query: str) -> str:
     
     try:
         print("Routed to Computer Science Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "computer_science")
+
         # Create the computer science agent with relevant tools
         cs_agent = Agent(
             system_prompt=COMPUTER_SCIENCE_ASSISTANT_SYSTEM_PROMPT,

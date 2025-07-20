@@ -1,11 +1,16 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 import requests
 import urllib.parse
 import json
 import re
 
 WEB_BROWSER_SYSTEM_PROMPT = """
-You are WebBrowseAssist, a specialized web browsing assistant with real-time website access capabilities. Your role is to:
+You are WebBrowseAssist, a specialized web browsing assistant with real-time website access capabilities.
+
+IMPORTANT: You will receive current date/time context at the beginning of queries. Use this as the actual current date/time for all research and responses. Never assume dates from model names or other sources.
+
+Your role is to:
 
 1. Website Analysis:
    - Browse and analyze websites in real-time
@@ -41,12 +46,13 @@ def web_browser_assistant(query: str) -> str:
     """
     try:
         print("Routed to Web Browser Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "web")
         
-        # Gather website intelligence
+        # Gather additional website intelligence
         company_intelligence = gather_company_intelligence(query)
         
         # Format query for the web browser agent
-        formatted_query = f"Analyze this website data and provide comprehensive insights about the company's offerings and services: {query}\n\nWebsite Data: {company_intelligence}"
+        formatted_query = f"Analyze this website data and provide comprehensive insights about the company's offerings and services: {enhanced_query}\n\nAdditional Website Data: {company_intelligence}"
         
         # Create web browser agent
         web_agent = Agent(

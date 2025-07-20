@@ -1,4 +1,5 @@
 from strands import Agent, tool
+from realtime_data_access import enhance_query_with_realtime
 from web_browser_assistant import web_browser_assistant
 
 DATA_ANALYSIS_SYSTEM_PROMPT = """
@@ -38,8 +39,10 @@ def data_analysis_assistant(query: str) -> str:
     """
     try:
         print("Routed to Data Analysis Assistant")
+        enhanced_query = enhance_query_with_realtime(query, "data_analysis")
+
         
-        formatted_query = f"Provide expert data analysis and statistical guidance for: {query}"
+        formatted_query = f"Provide expert data analysis and statistical guidance for: {enhanced_query}"
         
         # Add web browsing for current data if needed
 
