@@ -31,12 +31,23 @@ class CryptoDataService:
             'SHIB', 'DOT', 'TRX', 'LINK', 'TON', 'MATIC', 'WBTC', 'DAI', 'BCH', 'LTC'
         ]
     
-    @lru_cache(maxsize=100)
     def get_crypto_price(self, symbol: str) -> Optional[Dict[str, Any]]:
-        """Get cryptocurrency price with caching for performance"""
-        # Cache key includes timestamp rounded to cache_ttl to ensure periodic refresh
-        cache_key = f"{symbol}_{int(time.time() / self.cache_ttl)}"
+        """Get cryptocurrency price with minimal caching for real-time data"""
+        # Reduced cache TTL to ensure fresh data
+        self.cache_ttl = 30  # 30 seconds max cache time
         
+        # Force cache invalidation for critical requests
+        self._price_cache = getattr(self, '_price_cache', {})
+        cache_key = symbol.upper()
+        
+        # Check if we have a recent cache entry
+        now = time.time()
+        if cache_key in self._price_cache:
+            timestamp, data = self._price_cache[cache_key]
+            if now - timestamp < self.cache_ttl:
+                return data
+        
+        # No valid cache entry, fetch fresh data
         result = None
         
         # Try CoinGecko first (most reliable)
@@ -49,11 +60,15 @@ class CryptoDataService:
         # Last resort fallback to Yahoo Finance
         if not result:
             result = self._fetch_from_yahoo(symbol)
+        
+        # Update cache with fresh data
+        if result:
+            self._price_cache[cache_key] = (now, result)
             
         return result
     
     def _fetch_from_coingecko(self, symbol: str) -> Optional[Dict[str, Any]]:
-        """Fetch data from CoinGecko API"""
+        """Fetch data from CoinGecko API with cache-busting"""
         try:
             coin_map = {
                 'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana',
@@ -66,12 +81,21 @@ class CryptoDataService:
             coin_id = coin_map.get(symbol.upper())
             if not coin_id:
                 return None
-                
-            url = f"https://api.coingecko.com/api/v3/coins/{coin_id}"
+            
+            # Add timestamp to prevent caching
+            timestamp = int(time.time())
+            url = f"https://api.coingecko.com/api/v3/coins/{coin_id}?timestamp={timestamp}"
             if self.coingecko_api_key:
-                url += f"?x_cg_pro_api_key={self.coingecko_api_key}"
-                
-            response = self.session.get(url, timeout=self.timeout)
+                url += f"&x_cg_pro_api_key={self.coingecko_api_key}"
+            
+            # Add cache control headers
+            headers = {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+            
+            response = self.session.get(url, headers=headers, timeout=self.timeout)
             
             if response.status_code == 200:
                 data = response.json()
@@ -82,6 +106,9 @@ class CryptoDataService:
                 market_cap = data['market_data']['market_cap']['usd']
                 volume_24h = data['market_data']['total_volume']['usd']
                 
+                # Get current time in ISO format with timezone
+                current_time = datetime.now().isoformat()
+                
                 return {
                     'symbol': symbol.upper(),
                     'name': data['name'],
@@ -89,7 +116,7 @@ class CryptoDataService:
                     'change_24h': change_24h,
                     'market_cap': market_cap,
                     'volume_24h': volume_24h,
-                    'timestamp': datetime.now().isoformat(),
+                    'timestamp': current_time,
                     'source': 'coingecko'
                 }
         except Exception as e:

@@ -120,54 +120,51 @@ class RealTimeDataAccess:
         return "\n\n".join(data_parts)
     
     def get_crypto_prices(self, query: str) -> Optional[str]:
-        """Get cryptocurrency prices from multiple sources"""
-        crypto_symbols = {
-            'bitcoin': 'BTC', 'btc': 'BTC',
-            'ethereum': 'ETH', 'eth': 'ETH', 
-            'apecoin': 'APE', 'ape': 'APE',
-            'dogecoin': 'DOGE', 'doge': 'DOGE',
-            'cardano': 'ADA', 'ada': 'ADA',
-            'solana': 'SOL', 'sol': 'SOL',
-            'chainlink': 'LINK', 'link': 'LINK',
-            'polygon': 'MATIC', 'matic': 'MATIC'
-        }
-        
-        prices = []
-        query_lower = query.lower()
-        
-        for name, symbol in crypto_symbols.items():
-            if name in query_lower:
-                price = self._fetch_crypto_price(symbol)
-                if price:
-                    prices.append(f"{symbol}: {price}")
-        
-        return " | ".join(prices) if prices else None
-    
-    def _fetch_crypto_price(self, symbol: str) -> Optional[str]:
-        """Fetch individual crypto price"""
+        """Get cryptocurrency prices from enhanced crypto data service"""
         try:
-            # Try CoinGecko API
-            coin_map = {
-                'BTC': 'bitcoin', 'ETH': 'ethereum', 'APE': 'apecoin',
-                'DOGE': 'dogecoin', 'ADA': 'cardano', 'SOL': 'solana',
-                'LINK': 'chainlink', 'MATIC': 'matic-network'
-            }
+            from crypto_data_service import get_enhanced_crypto_data
             
-            coin_id = coin_map.get(symbol)
-            if coin_id:
-                url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd&include_24hr_change=true"
-                response = self.session.get(url, timeout=self.timeout)
+            # Get real-time data from the enhanced service
+            crypto_data = get_enhanced_crypto_data(query)
+            
+            # If we got data, return it with timestamp
+            if crypto_data and crypto_data != "No specific cryptocurrency data available":
+                current_time = datetime.now().strftime("%H:%M:%S UTC")
+                return f"{crypto_data} (as of {current_time})"
                 
-                if response.status_code == 200:
-                    data = response.json().get(coin_id, {})
-                    if data:
-                        price = data.get('usd', 0)
-                        change = data.get('usd_24h_change', 0)
-                        return f"${price:,.4f} ({change:+.2f}%)"
-        except:
-            pass
+            # If no specific data but query is about crypto, return top coins
+            if any(word in query.lower() for word in ['crypto', 'bitcoin', 'ethereum', 'price']):
+                # Force refresh top coins
+                from crypto_data_service import crypto_data_service
+                btc_data = crypto_data_service.get_crypto_price('BTC')
+                eth_data = crypto_data_service.get_crypto_price('ETH')
+                sol_data = crypto_data_service.get_crypto_price('SOL')
+                
+                prices = []
+                current_time = datetime.now().strftime("%H:%M:%S UTC")
+                
+                if btc_data:
+                    price_str = f"${btc_data['price_usd']:,.2f}"
+                    change_str = f"{btc_data['change_24h']:+.2f}%" if 'change_24h' in btc_data else "N/A"
+                    prices.append(f"BTC: {price_str} ({change_str})")
+                    
+                if eth_data:
+                    price_str = f"${eth_data['price_usd']:,.2f}"
+                    change_str = f"{eth_data['change_24h']:+.2f}%" if 'change_24h' in eth_data else "N/A"
+                    prices.append(f"ETH: {price_str} ({change_str})")
+                    
+                if sol_data:
+                    price_str = f"${sol_data['price_usd']:,.2f}"
+                    change_str = f"{sol_data['change_24h']:+.2f}%" if 'change_24h' in sol_data else "N/A"
+                    prices.append(f"SOL: {price_str} ({change_str})")
+                
+                if prices:
+                    return f"{' | '.join(prices)} (as of {current_time})"
+        except Exception as e:
+            print(f"Error fetching crypto data: {str(e)}")
         
-        return None
+        # Fallback with clear indication this is a fallback
+        return "Crypto data temporarily unavailable - please check market sources"
     
     def get_f1_data(self) -> Optional[str]:
         """Get current F1 race information from multiple sources"""
