@@ -66,6 +66,10 @@ cdk deploy StreamlitAssistantStackDev --app "python3 app_dev.py" --require-appro
 
 Both environments use AWS Cognito for secure user authentication with environment-specific user pools.
 
+### Recent Updates
+- Fixed authentication error by correctly implementing CognitoAuthenticator methods
+- Improved logout functionality to properly clear session state
+
 ## 📝 Development Workflow
 
 1. Create feature branch from `dev`
