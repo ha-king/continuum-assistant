@@ -378,10 +378,10 @@ teacher_agent = create_teacher_agent_with_datetime()
 # Display chat interface
 if st.button("🗑️ Clear Chat"):
     st.session_state.messages = []
-    # Delete conversation from persistent storage
+    # Start a new conversation without deleting the old one
     user_id = st.session_state.get('user_id', 'anonymous')
     if user_id != 'anonymous':
-        conversation_storage.delete_conversation(user_id)
+        conversation_storage.start_new_conversation(user_id)
     st.rerun()
 
 # Display chat messages

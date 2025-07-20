@@ -128,6 +128,24 @@ class ConversationStorage:
         except Exception as e:
             print(f"Failed to delete conversation: {str(e)}")
             return False
+            
+    def start_new_conversation(self, user_id):
+        """Start a new conversation without deleting the old one"""
+        if not self.enabled or not user_id or user_id == 'anonymous':
+            return False
+        
+        try:
+            # Simply remove the reference in DynamoDB, which will cause a new S3 file to be created
+            # on the next save_conversation call, but keeps the old S3 file intact
+            self.table.delete_item(
+                Key={
+                    'conversation_id': user_id
+                }
+            )
+            return True
+        except Exception as e:
+            print(f"Failed to start new conversation: {str(e)}")
+            return False
 
 # Global instance
 conversation_storage = ConversationStorage()

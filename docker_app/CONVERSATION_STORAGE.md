@@ -46,7 +46,10 @@ load_user_conversation(user_id)
 # Save conversation after each message
 save_user_conversation(user_id)
 
-# Delete conversation when clearing chat
+# Start a new conversation without deleting the old one (used for clear chat)
+conversation_storage.start_new_conversation(user_id)
+
+# Delete conversation (only used for administrative purposes)
 conversation_storage.delete_conversation(user_id)
 ```
 
