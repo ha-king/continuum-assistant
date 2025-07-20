@@ -13,6 +13,10 @@ from aws_cdk import (
     aws_codepipeline as codepipeline,
     aws_codepipeline_actions as codepipeline_actions,
     aws_codebuild as codebuild,
+    aws_dynamodb as dynamodb,
+    aws_s3 as s3,
+    Duration,
+    RemovalPolicy,
     SecretValue,
     CfnOutput,
 )
@@ -168,7 +172,61 @@ class CdkStack(Stack):
         # Grant access to read the secret in Secrets Manager
         secret.grant_read(task_role)
         
-        # Add policy for DynamoDB access to user profiles and response cache
+        # Create DynamoDB tables
+        # 1. User Conversations table
+        conversation_table = dynamodb.Table(
+            self, f"{prefix}ConversationTable",
+            table_name="user-conversations",
+            partition_key=dynamodb.Attribute(
+                name="conversation_id",
+                type=dynamodb.AttributeType.STRING
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=RemovalPolicy.RETAIN,  # Retain data when stack is deleted
+            time_to_live_attribute="expiry_time"
+        )
+        
+        # 2. User Profiles table
+        profiles_table = dynamodb.Table(
+            self, f"{prefix}UserProfilesTable",
+            table_name="user-profiles",
+            partition_key=dynamodb.Attribute(
+                name="user_id",
+                type=dynamodb.AttributeType.STRING
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=RemovalPolicy.RETAIN  # Retain data when stack is deleted
+        )
+        
+        # 3. Response Cache table
+        cache_table = dynamodb.Table(
+            self, f"{prefix}ResponseCacheTable",
+            table_name="response-cache",
+            partition_key=dynamodb.Attribute(
+                name="cache_key",
+                type=dynamodb.AttributeType.STRING
+            ),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=RemovalPolicy.DESTROY,  # Cache can be safely destroyed
+            time_to_live_attribute="ttl"  # Enable TTL for automatic cleanup
+        )
+        
+        # 4. Create S3 bucket for conversation data storage
+        conversation_bucket = s3.Bucket(
+            self, f"{prefix}ConversationBucket",
+            bucket_name=f"user-conversations-data-{self.account}-{self.region}",
+            removal_policy=RemovalPolicy.RETAIN,  # Retain data when stack is deleted
+            lifecycle_rules=[
+                s3.LifecycleRule(
+                    expiration=Duration.days(30),  # Auto-delete after 30 days
+                    enabled=True
+                )
+            ],
+            encryption=s3.BucketEncryption.S3_MANAGED,
+            block_public_access=s3.BlockPublicAccess.BLOCK_ALL
+        )
+        
+        # Add policy for DynamoDB access to all tables
         dynamodb_policy = iam.Policy(
             self,
             f"{prefix}DynamoDBPolicy",
@@ -182,17 +240,38 @@ class CdkStack(Stack):
                         "dynamodb:Scan"
                     ],
                     resources=[
-                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/user-profiles",
-                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/user-profiles/index/*",
-                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/response-cache",
-                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/response-cache/index/*",
-                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/user-conversations",
-                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/user-conversations/index/*"
+                        conversation_table.table_arn,
+                        f"{conversation_table.table_arn}/index/*",
+                        profiles_table.table_arn,
+                        f"{profiles_table.table_arn}/index/*",
+                        cache_table.table_arn,
+                        f"{cache_table.table_arn}/index/*"
                     ]
                 )
             ]
         )
         task_role.attach_inline_policy(dynamodb_policy)
+        
+        # Add policy for S3 access
+        s3_policy = iam.Policy(
+            self,
+            f"{prefix}S3Policy",
+            statements=[
+                iam.PolicyStatement(
+                    actions=[
+                        "s3:PutObject",
+                        "s3:GetObject",
+                        "s3:DeleteObject",
+                        "s3:ListBucket"
+                    ],
+                    resources=[
+                        conversation_bucket.bucket_arn,
+                        f"{conversation_bucket.bucket_arn}/*"
+                    ]
+                )
+            ]
+        )
+        task_role.attach_inline_policy(s3_policy)
 
         # Add ALB as CloudFront Origin
         origin = origins.LoadBalancerV2Origin(
