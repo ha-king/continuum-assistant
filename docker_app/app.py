@@ -65,10 +65,12 @@ else:
             st.stop()
         
         # Store user ID in session state for conversation persistence
-        if 'user_id' not in st.session_state and authenticator.user is not None:
-            st.session_state.user_id = authenticator.user.username
-            # Load user's conversation history
-            load_user_conversation(st.session_state.user_id)
+        if 'user_id' not in st.session_state and authenticator.is_logged_in():
+            username = authenticator.get_username()
+            if username:
+                st.session_state.user_id = username
+                # Load user's conversation history
+                load_user_conversation(st.session_state.user_id)
             
     except Exception as e:
         st.error(f"Authentication error: {str(e)}")
@@ -244,8 +246,13 @@ initialize_session_state()
 
 with st.sidebar:
     # Add logout button
-    if st.button("🚪 Logout"):
+    if st.button("🚪 Logout") and 'authenticator' in locals():
         authenticator.logout()
+        # Clear user session data
+        if 'user_id' in st.session_state:
+            del st.session_state.user_id
+        if 'messages' in st.session_state:
+            st.session_state.messages = []
         st.rerun()
     
     st.header("Configuration")
