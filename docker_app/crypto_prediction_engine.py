@@ -5,6 +5,7 @@ Crypto Prediction Engine - Enhanced forecasting capabilities for cryptocurrency 
 import json
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+from direct_crypto_api import get_realtime_price
 from crypto_data_service import crypto_data_service
 
 class CryptoPredictionEngine:
@@ -37,14 +38,17 @@ class CryptoPredictionEngine:
         Returns:
             Dictionary with growth analysis
         """
-        # Get current price data
-        price_data = crypto_data_service.get_crypto_price(symbol)
+        # Get current price data directly from API
+        price_data = get_realtime_price(symbol)
         if not price_data:
-            return {
-                "symbol": symbol,
-                "error": "Unable to retrieve price data",
-                "timestamp": datetime.now().isoformat()
-            }
+            # Fall back to crypto_data_service if direct API fails
+            price_data = crypto_data_service.get_crypto_price(symbol)
+            if not price_data:
+                return {
+                    "symbol": symbol,
+                    "error": "Unable to retrieve price data",
+                    "timestamp": datetime.now().isoformat()
+                }
         
         # Get market overview for context
         market_data = crypto_data_service.get_market_overview()
@@ -252,7 +256,8 @@ class CryptoPredictionEngine:
                     analyses.append(f"{symbol}: Current ${price:.2f} → Potential ${potential_price:.2f} ({multiple:.1f}x, {confidence} confidence)")
             
             if analyses:
-                return f"Cryptocurrency growth analysis ({time_horizon}):\\n" + "\\n".join(analyses)
+                current_time = datetime.now().strftime("%H:%M:%S UTC")
+                return f"Cryptocurrency growth analysis ({time_horizon}) as of {current_time}:\\n" + "\\n".join(analyses)
             else:
                 return "Unable to analyze the specified cryptocurrencies."
         
@@ -264,7 +269,8 @@ class CryptoPredictionEngine:
             market_overview = crypto_data_service.get_market_overview()
             market_cap = market_overview.get("total_market_cap_usd", 0) / 1e12  # In trillions
             
-            return f"Crypto Market Forecast ({time_horizon}):\\n" + \
+            current_time = datetime.now().strftime("%H:%M:%S UTC")
+            return f"Crypto Market Forecast ({time_horizon}) as of {current_time}:\\n" + \
                    f"Total Market Cap: ${market_cap:.2f}T\\n" + \
                    f"BTC: {btc_analysis.get('potential_multiple', 0):.1f}x potential ({btc_analysis.get('confidence', 'low')} confidence)\\n" + \
                    f"ETH: {eth_analysis.get('potential_multiple', 0):.1f}x potential ({eth_analysis.get('confidence', 'low')} confidence)"
