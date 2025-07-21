@@ -15,6 +15,8 @@ from aws_cdk import (
     aws_codebuild as codebuild,
     aws_dynamodb as dynamodb,
     aws_s3 as s3,
+    aws_route53 as route53,
+    aws_route53_targets as route53_targets,
     Duration,
     RemovalPolicy,
     SecretValue,
@@ -347,6 +349,24 @@ class CdkStack(Stack):
         # Output Cognito pool id
         CfnOutput(self, "CognitoPoolId",
                   value=user_pool.user_pool_id)
+        
+        # Create Route 53 record for soa.infascination.com using CfnRecordSet
+        # This approach doesn't require hosted zone lookup during synthesis
+        route53_record = route53.CfnRecordSet(
+            self, f"{prefix}SoaRecord",
+            hosted_zone_id="Z38NNSB3ZB52CA",  # Actual hosted zone ID for infascination.com
+            name="soa.infascination.com.",  # Note the trailing dot
+            type="A",
+            alias_target=route53.CfnRecordSet.AliasTargetProperty(
+                dns_name=cloudfront_distribution.domain_name,
+                hosted_zone_id="Z2FDTNDATAQYW2",  # CloudFront's hosted zone ID is always this value
+                evaluate_target_health=False
+            )
+        )
+        
+        # Output the Route 53 record
+        CfnOutput(self, "SoaDomainName", value="soa.infascination.com")
+
 
         # CI/CD Pipeline for both environments
         # GitHub token secret

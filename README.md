@@ -6,6 +6,7 @@ A sophisticated Streamlit application featuring 28+ specialized AI assistants wi
 
 ### Production Environment
 - **URL**: https://d2wyi9setnpika.cloudfront.net
+- **Custom Domain**: https://soa.infascination.com
 - **Branch**: `main`
 - **Environment**: `prod`
 - **CI/CD**: ✅ Automated deployment on push to main
