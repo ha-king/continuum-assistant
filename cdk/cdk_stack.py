@@ -17,6 +17,7 @@ from aws_cdk import (
     aws_s3 as s3,
     aws_route53 as route53,
     aws_route53_targets as route53_targets,
+    aws_certificatemanager as acm,
     Duration,
     RemovalPolicy,
     SecretValue,
@@ -301,6 +302,12 @@ class CdkStack(Stack):
             protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
         )
 
+        # Import the existing ACM certificate
+        cert = acm.Certificate.from_certificate_arn(
+            self, f"{prefix}Certificate",
+            certificate_arn="arn:aws:acm:us-east-1:540257590858:certificate/8a1c79a3-0fde-4471-8410-65bc9cb5b92e"
+        )
+        
         cloudfront_distribution = cloudfront.Distribution(
             self,
             f"{prefix}CfDist",
@@ -311,6 +318,8 @@ class CdkStack(Stack):
                 cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
                 origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
             ),
+            domain_names=["soa.infascination.com"],
+            certificate=cert,
         )
 
         # ALB Listener
