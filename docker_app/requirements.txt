@@ -1,4 +1,5 @@
 boto3
+coinbase
 mcp[cli]
 nova-act
 opensearch-py

@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 import os
 from functools import lru_cache
+from coinbase_api_service import coinbase_service, get_coinbase_price_data
 
 class CryptoDataService:
     """Enhanced cryptocurrency data service with caching and multiple API sources"""
@@ -50,8 +51,12 @@ class CryptoDataService:
         # No valid cache entry, fetch fresh data
         result = None
         
-        # Try CoinGecko first (most reliable)
-        result = self._fetch_from_coingecko(symbol)
+        # Try Coinbase first (most reliable for major cryptos)
+        result = self._fetch_from_coinbase(symbol)
+        
+        # Fallback to CoinGecko if Coinbase fails
+        if not result:
+            result = self._fetch_from_coingecko(symbol)
         
         # Fallback to CoinMarketCap if needed
         if not result:
@@ -66,6 +71,44 @@ class CryptoDataService:
             self._price_cache[cache_key] = (now, result)
             
         return result
+    
+    def _fetch_from_coinbase(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """Fetch data from Coinbase API"""
+        try:
+            currency_pair = f"{symbol.upper()}-USD"
+            
+            # Get spot price
+            spot_data = coinbase_service.get_spot_price(currency_pair)
+            if not spot_data:
+                return None
+            
+            # Get additional stats if available
+            stats_data = coinbase_service.get_price_stats(currency_pair)
+            
+            price = spot_data['price']
+            change_24h = 0
+            volume_24h = 0
+            
+            if stats_data:
+                if 'open' in stats_data and stats_data['open'] > 0:
+                    change_24h = ((price - stats_data['open']) / stats_data['open']) * 100
+                if 'volume' in stats_data:
+                    volume_24h = stats_data['volume']
+            
+            return {
+                'symbol': symbol.upper(),
+                'name': f"{symbol.upper()}/USD",
+                'price_usd': price,
+                'change_24h': change_24h,
+                'volume_24h': volume_24h,
+                'timestamp': datetime.now().isoformat(),
+                'source': 'coinbase'
+            }
+            
+        except Exception as e:
+            print(f"Coinbase API error: {str(e)}")
+        
+        return None
     
     def _fetch_from_coingecko(self, symbol: str) -> Optional[Dict[str, Any]]:
         """Fetch data from CoinGecko API with cache-busting"""
@@ -300,8 +343,21 @@ class CryptoDataService:
 crypto_data_service = CryptoDataService()
 
 def get_enhanced_crypto_data(query: str) -> str:
-    """Get enhanced cryptocurrency data for a query"""
-    return crypto_data_service.format_crypto_data_for_context(query)
+    """Get enhanced cryptocurrency data for a query with Coinbase integration"""
+    try:
+        # Try Coinbase first for real-time data
+        coinbase_data = get_coinbase_price_data(query)
+        if coinbase_data and "Error" not in coinbase_data and "unavailable" not in coinbase_data:
+            # Add timestamp and source info
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+            return f"{coinbase_data} | Source: Coinbase API | Time: {timestamp}"
+    except Exception as e:
+        print(f"Coinbase integration error: {str(e)}")
+    
+    # Fallback to existing service
+    fallback_data = crypto_data_service.format_crypto_data_for_context(query)
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC")
+    return f"{fallback_data} | Time: {timestamp}"
 
 # Test function
 if __name__ == "__main__":
