@@ -32,7 +32,7 @@ A sophisticated Streamlit application featuring 28+ specialized AI assistants wi
 - **Psychology Assistant** - Mental health and behavioral analysis
 - **Cryptography Assistant** - Encryption and security protocols
 - **Blockchain Assistant** - Distributed ledger technology
-- **Cryptocurrency Assistant** - Digital currency analysis
+- **Cryptocurrency Assistant** - Real-time crypto prices and market analysis with Coinbase API integration
 - **Economics Assistant** - Economic theory and market analysis
 - **Cybersecurity Offense/Defense** - Security testing and protection
 - **Formula 1 Assistant** - Live F1 race data, standings, and comprehensive analysis with multi-source integration (OpenF1, Ergast, ESPN)
@@ -71,6 +71,34 @@ Both environments use AWS Cognito for secure user authentication with environmen
 - Fixed authentication error by correctly implementing CognitoAuthenticator methods
 - Improved logout functionality to properly clear session state
 
+## 💰 Coinbase API Integration
+
+The cryptocurrency assistant now features real-time data access through Coinbase API integration:
+
+### Features
+- **Real-time Price Data**: Current spot prices for major cryptocurrencies
+- **24-hour Statistics**: Price changes, highs, lows, and volume data
+- **Historical Analysis**: Multi-day trend analysis and performance tracking
+- **Market Comparisons**: Side-by-side cryptocurrency comparisons
+- **Secure Authentication**: API credentials stored in AWS Secrets Manager
+
+### Supported Cryptocurrencies
+- Bitcoin (BTC), Ethereum (ETH), Solana (SOL)
+- Cardano (ADA), Polkadot (DOT), and more
+- Automatic fallback to CoinGecko and other sources
+
+### Configuration
+API credentials are securely stored in AWS Secrets Manager:
+- `coinbase-api-key`: Coinbase API key
+- `coinbase-api-token`: Coinbase API secret/token
+
+### Testing
+```bash
+# Test Coinbase integration
+cd docker_app
+python test_coinbase_simple.py
+```
+
 ## 📝 Development Workflow
 
 1. Create feature branch from `dev`
@@ -97,7 +125,7 @@ streamlit run app.py
 
 - ✅ 28+ Specialized AI Assistants
 - ✅ Real-time Web Browsing Capabilities
-- ✅ Live Data Integration (F1, Crypto, Aviation)
+- ✅ Live Data Integration (F1, Crypto via Coinbase API, Aviation)
 - ✅ OpenF1 API Integration for live F1 data
 - ✅ Multi-tab Chat Interface
 - ✅ Reference Tracking
@@ -105,3 +133,4 @@ streamlit run app.py
 - ✅ Automated CI/CD Pipeline
 - ✅ Multi-environment Deployment
 - ✅ Current Date/Time Awareness
+- ✅ Coinbase API Integration for Real-time Cryptocurrency Data
