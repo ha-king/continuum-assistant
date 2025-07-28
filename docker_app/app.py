@@ -432,6 +432,10 @@ if prompt := st.chat_input("Ask your question here..."):
             
             with st.chat_message("assistant"):
                 try:
+                    # Initialize variables to avoid undefined errors
+                    enhanced_prompt = None
+                    assistant_func = None
+                    
                     # Get current datetime and user context for orchestrator and all agents
                     user_context = get_user_context()
                     datetime_context = user_context

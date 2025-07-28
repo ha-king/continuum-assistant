@@ -70,6 +70,8 @@ Both environments use AWS Cognito for secure user authentication with environmen
 ### Recent Updates
 - Fixed authentication error by correctly implementing CognitoAuthenticator methods
 - Improved logout functionality to properly clear session state
+- Fixed NameError: 'enhanced_prompt' is not defined by properly initializing variables in app.py
+- Enhanced error handling for crypto price forecasting queries
 
 ## 💰 Coinbase API Integration
 
